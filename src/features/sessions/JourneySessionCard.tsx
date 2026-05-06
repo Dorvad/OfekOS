@@ -1,12 +1,11 @@
 import Link from "next/link";
 import Badge from "@/components/ui/Badge";
-import type { Session, SessionContent } from "@/lib/types";
+import type { Session } from "@/lib/types";
 import type { SessionLockStatus } from "@/lib/progress";
 import { formatDate, cn } from "@/lib/utils";
 
 interface JourneySessionCardProps {
   session: Session;
-  content: SessionContent;
   index: number;
   lockStatus: SessionLockStatus;
   taskCount: number;
@@ -49,7 +48,6 @@ function StatusIndicator({ status }: { status: SessionLockStatus }) {
 
 export default function JourneySessionCard({
   session,
-  content,
   index,
   lockStatus,
   taskCount,

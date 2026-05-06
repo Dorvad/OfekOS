@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import TaskItem from "./TaskItem";
-import { getTaskCompleted, setTaskCompleted, getAllTaskCompletions } from "@/lib/task-storage";
+import { setTaskCompleted, getAllTaskCompletions } from "@/lib/task-storage";
 import { deriveTaskStatus } from "@/lib/progress";
 import type { Task, SessionStatus } from "@/lib/types";
 

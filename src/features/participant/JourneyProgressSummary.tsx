@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Card from "@/components/ui/Card";
+import ProgressBar from "@/components/ui/ProgressBar";
 
 interface JourneyProgressSummaryProps {
   completedCount: number;
@@ -18,12 +19,7 @@ export default function JourneyProgressSummary({
         <h3 className="text-sm font-semibold text-gray-900">Your Journey</h3>
         <span className="text-xs text-gray-400">{percentage}%</span>
       </div>
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
-        <div
-          className="h-full bg-indigo-500 rounded-full transition-all"
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
+      <ProgressBar value={percentage} color="indigo" className="mb-3" />
       <div className="flex items-center justify-between">
         <span className="text-xs text-gray-500">
           {completedCount} of {totalCount} sessions complete

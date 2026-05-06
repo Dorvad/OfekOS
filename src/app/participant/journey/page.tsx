@@ -1,5 +1,6 @@
-import { MOCK_SESSIONS, MOCK_SESSION_CONTENTS, MOCK_TASKS } from "@/lib/mock-data";
+import { MOCK_SESSIONS, MOCK_TASKS } from "@/lib/mock-data";
 import { getSessionLockStatus, computeOverallProgress } from "@/lib/progress";
+import ProgressBar from "@/components/ui/ProgressBar";
 import ParticipantPageHeader from "@/features/participant/ParticipantPageHeader";
 import JourneySessionCard from "@/features/sessions/JourneySessionCard";
 import JourneyConnector from "@/features/sessions/JourneyConnector";
@@ -23,12 +24,7 @@ export default function JourneyPage() {
           </span>
           <span className="text-sm font-semibold text-indigo-700">{overallProgress}%</span>
         </div>
-        <div className="h-2 bg-indigo-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-indigo-500 rounded-full transition-all"
-            style={{ width: `${overallProgress}%` }}
-          />
-        </div>
+        <ProgressBar value={overallProgress} color="indigo" />
       </div>
 
       {/* Session path */}
@@ -36,14 +32,12 @@ export default function JourneyPage() {
         {MOCK_SESSIONS.map((session, i) => {
           const lockStatus = getSessionLockStatus(session, MOCK_SESSIONS);
           const taskCount = MOCK_TASKS.filter((t) => t.sessionId === session.id).length;
-          const content = MOCK_SESSION_CONTENTS[session.id];
           const isLastCompleted = session.status === "completed";
 
           return (
             <div key={session.id}>
               <JourneySessionCard
                 session={session}
-                content={content}
                 index={i}
                 lockStatus={lockStatus}
                 taskCount={taskCount}

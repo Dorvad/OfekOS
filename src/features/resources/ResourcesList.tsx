@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Resource, Session, ResourceType } from "@/lib/types";
 import ResourceCard from "./ResourceCard";
 import ResourceFilter from "./ResourceFilter";
+import EmptyState from "@/components/ui/EmptyState";
 
 interface ResourcesListProps {
   resources: Resource[];
@@ -41,10 +42,10 @@ export default function ResourcesList({ resources, sessions }: ResourcesListProp
       </p>
 
       {filtered.length === 0 ? (
-        <div className="py-12 text-center">
-          <p className="text-sm font-medium text-gray-500">No resources match your filters</p>
-          <p className="text-xs text-gray-400 mt-1">Try clearing one of the filters above</p>
-        </div>
+        <EmptyState
+          message="No resources match your filters"
+          description="Try clearing one of the filters above"
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {filtered.map((resource) => (

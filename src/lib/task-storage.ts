@@ -1,7 +1,6 @@
 import { STORAGE_KEYS } from "./storage-keys";
 
-export function getTaskCompleted(taskId: string): boolean {
-  if (typeof window === "undefined") return false;
+function getTaskCompleted(taskId: string): boolean {
   return localStorage.getItem(STORAGE_KEYS.task(taskId)) === "completed";
 }
 

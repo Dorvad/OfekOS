@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Card from "@/components/ui/Card";
+import ProgressBar from "@/components/ui/ProgressBar";
 import { useState, useEffect } from "react";
 import { countWorkbookSectionsWithContent } from "@/lib/workbook-storage";
 import type { WorkbookSection } from "@/lib/types";
@@ -29,14 +30,11 @@ export default function WorkbookProgressSummary({ sections }: WorkbookProgressSu
           {sectionsWithContent === null ? "—" : `${percentage}%`}
         </span>
       </div>
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
-        {sectionsWithContent !== null && (
-          <div
-            className="h-full bg-emerald-500 rounded-full transition-all"
-            style={{ width: `${percentage}%` }}
-          />
-        )}
-      </div>
+      <ProgressBar
+        value={sectionsWithContent !== null ? percentage : 0}
+        color="emerald"
+        className="mb-3"
+      />
       <div className="flex items-center justify-between">
         <span className="text-xs text-gray-500">
           {sectionsWithContent === null

@@ -17,7 +17,6 @@ const typeLabel: Record<Task["type"], string> = {
 export default function TaskItem({ task, status, onToggle }: TaskItemProps) {
   const isCompleted = status === "completed";
   const isLocked = status === "locked";
-  const isInteractive = !isLocked && !!onToggle;
 
   return (
     <div

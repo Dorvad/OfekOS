@@ -1,4 +1,3 @@
-import { cn } from "@/lib/utils";
 import type { PracticeDifficulty } from "@/lib/types";
 import type { BadgeVariant } from "@/components/ui/Badge";
 import Badge from "@/components/ui/Badge";
