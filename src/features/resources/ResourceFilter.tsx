@@ -4,11 +4,11 @@ import type { ResourceType } from "@/lib/types";
 import type { Session } from "@/lib/types";
 
 const TYPE_OPTIONS: { value: ResourceType | "all"; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "file", label: "Files" },
-  { value: "template", label: "Templates" },
-  { value: "link", label: "Links" },
-  { value: "video", label: "Videos" },
+  { value: "all", label: "הכל" },
+  { value: "file", label: "קבצים" },
+  { value: "template", label: "תבניות" },
+  { value: "link", label: "קישורים" },
+  { value: "video", label: "סרטונים" },
 ];
 
 interface ResourceFilterProps {
@@ -53,7 +53,7 @@ export default function ResourceFilter({
               : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
           }`}
         >
-          All sessions
+          כל המפגשים
         </button>
         {sessions.map((session) => (
           <button

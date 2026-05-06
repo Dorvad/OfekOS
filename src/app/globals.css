@@ -17,3 +17,13 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+@keyframes badge-appear {
+  0%   { transform: scale(0.5); opacity: 0; }
+  70%  { transform: scale(1.08); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+.animate-badge-appear {
+  animation: badge-appear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
