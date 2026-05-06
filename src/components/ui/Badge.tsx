@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type BadgeVariant = "default" | "success" | "warning" | "info" | "muted";
+export type BadgeVariant = "default" | "success" | "warning" | "info" | "muted";
 
 interface BadgeProps {
   label: string;
