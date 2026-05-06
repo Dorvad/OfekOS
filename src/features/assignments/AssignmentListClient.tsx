@@ -42,9 +42,12 @@ export default function AssignmentListClient({ assignments }: AssignmentListClie
   if (!hydrated) {
     return (
       <div className="space-y-4">
-        {assignments.map((a) => (
-          <div key={a.id} className="h-36 bg-gray-100 rounded-2xl animate-pulse" />
-        ))}
+        <div className="h-24 bg-gray-100 rounded-2xl animate-pulse" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {assignments.map((a) => (
+            <div key={a.id} className="h-36 bg-gray-100 rounded-2xl animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -54,13 +57,13 @@ export default function AssignmentListClient({ assignments }: AssignmentListClie
   ).length;
 
   return (
-    <div>
-      {/* Program axis */}
-      <Card className="mb-6">
+    <div className="space-y-5">
+      {/* Program axis strip */}
+      <Card>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-700">המסע שלך</h2>
-          <span className="text-xs text-gray-400">
-            {completedCount} מתוך {assignments.length} הושלמו
+          <span className="text-sm font-semibold text-gray-700">מסע התוכנית</span>
+          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+            {completedCount}/{assignments.length} הושלמו
           </span>
         </div>
         <ProgramAxis assignments={assignments} statuses={statuses} />

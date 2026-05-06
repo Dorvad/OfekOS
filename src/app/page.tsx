@@ -1,94 +1,77 @@
 import Link from "next/link";
-import { ROLES } from "@/lib/mock-data";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 export default function HomePage() {
   return (
-    <div>
-      {/* Hero */}
-      <section className="bg-white border-b border-gray-100">
-        <div className="max-w-4xl mx-auto px-4 py-24 text-center">
-          <div className="inline-flex items-center bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-full text-sm font-medium mb-8">
-            Management Development Platform
-          </div>
-          <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 tracking-tight mb-5">
-            OfekOS
-          </h1>
-          <p className="text-xl sm:text-2xl text-gray-600 font-medium mb-5 leading-snug">
-            A guided digital operating system
-            <br className="hidden sm:inline" /> for management development
-          </p>
-          <p className="text-base text-gray-500 max-w-2xl mx-auto leading-relaxed">
-            OfekOS supports the full ecosystem of a management development
-            program — from participants building leadership skills to
-            facilitators guiding cohorts and admins overseeing program health.
-          </p>
-        </div>
-      </section>
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <main className="flex-1">
 
-      {/* Roles */}
-      <section className="py-16 px-4 bg-gray-50">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-              Built for every role
-            </h2>
-            <p className="text-gray-500 max-w-xl mx-auto">
-              Each role has a tailored workspace designed around their specific
-              responsibilities in the program.
+        {/* Hero */}
+        <section className="bg-white border-b border-gray-100">
+          <div className="max-w-3xl mx-auto px-4 py-20 text-center">
+            <div className="inline-flex items-center bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-full text-sm font-medium mb-6">
+              פלטפורמה לפיתוח מנהלים
+            </div>
+            <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 tracking-tight mb-4">
+              OfekOS
+            </h1>
+            <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
+              מרחב עבודה דיגיטלי לתוכנית אופק — מטלות, תובנות וכלים למנהל המתפתח.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {ROLES.map((role) => (
-              <Link key={role.id} href={role.href} className="group block">
-                <div
-                  className={`bg-white rounded-xl border ${role.borderColor} p-6 shadow-sm hover:shadow-md transition-all duration-200 h-full flex flex-col`}
-                >
-                  <div
-                    className={`self-start px-3 py-1 rounded-full text-xs font-semibold ${role.bgColor} ${role.color} mb-4`}
-                  >
-                    {role.label}
+        </section>
+
+        {/* Role cards */}
+        <section className="py-14 px-4 bg-gray-50">
+          <div className="max-w-2xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+              {/* Participant */}
+              <Link href="/participant" className="group block">
+                <div className="bg-white rounded-2xl border border-indigo-200 p-6 shadow-sm hover:shadow-md transition-all h-full flex flex-col">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center mb-4">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
                   </div>
-                  <p className="text-gray-600 text-sm leading-relaxed flex-1">
-                    {role.description}
+                  <h2 className="font-bold text-gray-900 text-base mb-1">משתתף</h2>
+                  <p className="text-gray-500 text-sm leading-relaxed flex-1">
+                    המסע האישי שלך — מטלות גיימיפיות, תובנות, הכנה למפגשים וחומרי למידה.
                   </p>
-                  <div
-                    className={`mt-5 text-xs font-semibold ${role.color} flex items-center gap-1`}
-                  >
-                    Open dashboard
-                    <span className="group-hover:translate-x-0.5 transition-transform inline-block">
-                      →
-                    </span>
+                  <div className="mt-4 text-xs font-semibold text-indigo-600 flex items-center gap-1">
+                    כנס לממשק ←
                   </div>
                 </div>
               </Link>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* CTA */}
-      <section className="py-16 px-4 bg-white border-t border-gray-100">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-3">
-            Explore the prototype
-          </h2>
-          <p className="text-gray-500 mb-8">
-            Navigate to any role dashboard to see the foundational structure of
-            OfekOS.
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center">
-            {ROLES.map((role) => (
-              <Link
-                key={role.id}
-                href={role.href}
-                className={`px-5 py-2.5 rounded-lg text-sm font-medium border ${role.borderColor} ${role.bgColor} ${role.color} hover:opacity-80 transition-opacity`}
-              >
-                {role.label} Dashboard
+              {/* Admin */}
+              <Link href="/admin" className="group block">
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all h-full flex flex-col">
+                  <div className="w-10 h-10 rounded-xl bg-slate-600 flex items-center justify-center mb-4">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+                    </svg>
+                  </div>
+                  <h2 className="font-bold text-gray-900 text-base mb-1">Admin</h2>
+                  <p className="text-gray-500 text-sm leading-relaxed flex-1">
+                    Configure programs, manage users, and access full operational analytics.
+                  </p>
+                  <div className="mt-4 text-xs font-semibold text-slate-600 flex items-center gap-1">
+                    Open dashboard ←
+                  </div>
+                </div>
               </Link>
-            ))}
+
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+      </main>
+      <Footer />
     </div>
   );
 }

@@ -41,7 +41,7 @@ export default function InsightsPage() {
 
   if (!hydrated) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
         {[1, 2, 3].map((i) => (
           <div key={i} className="h-28 bg-gray-100 rounded-2xl animate-pulse" />
         ))}
@@ -50,10 +50,10 @@ export default function InsightsPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="max-w-2xl mx-auto px-4 py-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">התובנות שלי</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-xl font-bold text-gray-900">התובנות שלי</h1>
+        <p className="text-sm text-gray-400 mt-0.5">
           {collectedCount > 0
             ? `${collectedCount} מתוך ${MOCK_ASSIGNMENTS.length} תובנות נשמרו`
             : "השלם מטלות כדי לאסוף תובנות"}

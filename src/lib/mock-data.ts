@@ -22,34 +22,12 @@ export const ROLES: RoleConfig[] = [
     id: "participant",
     label: "Participant",
     description:
-      "Your personal learning journey — sessions, reflections, workbook, and AI practice space.",
+      "המסע האישי שלך — מטלות, תובנות, הכנה למפגשים, וחומרי למידה.",
     href: "/participant",
     color: "text-indigo-700",
     bgColor: "bg-indigo-50",
     borderColor: "border-indigo-200",
     accentColor: "bg-indigo-600",
-  },
-  {
-    id: "manager",
-    label: "Direct Manager",
-    description:
-      "Support your team members, review shared progress, and complete validation tasks.",
-    href: "/manager",
-    color: "text-emerald-700",
-    bgColor: "bg-emerald-50",
-    borderColor: "border-emerald-200",
-    accentColor: "bg-emerald-600",
-  },
-  {
-    id: "facilitator",
-    label: "Facilitator",
-    description:
-      "Manage cohorts, guide sessions, and monitor participant engagement and progress.",
-    href: "/facilitator",
-    color: "text-amber-700",
-    bgColor: "bg-amber-50",
-    borderColor: "border-amber-200",
-    accentColor: "bg-amber-500",
   },
   {
     id: "admin",

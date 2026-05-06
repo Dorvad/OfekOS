@@ -11,26 +11,40 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+const accentText: Record<string, string> = {
+  amber:   "text-amber-700",
+  violet:  "text-violet-700",
+  teal:    "text-teal-700",
+  emerald: "text-emerald-700",
+  orange:  "text-orange-700",
+  indigo:  "text-indigo-700",
+};
+
 export default async function AssignmentDetailPage({ params }: PageProps) {
   const { id } = await params;
   const assignment = MOCK_ASSIGNMENTS.find((a) => a.id === id);
   if (!assignment) notFound();
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="max-w-2xl mx-auto px-4 py-5">
+      {/* Back nav */}
       <Link
         href="/participant/assignments"
-        className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-block"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 mb-5 transition-colors"
       >
-        → חזרה למטלות
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+        חזרה למטלות
       </Link>
 
+      {/* Page heading */}
       <div className="mb-5">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+        <span className={`text-xs font-semibold uppercase tracking-wide ${accentText[assignment.accentColor]}`}>
           מפגש {assignment.sessionNumber}
         </span>
-        <h1 className="text-2xl font-bold text-gray-900 mt-1">{assignment.title}</h1>
-        <p className="text-sm text-gray-500 mt-1">{assignment.subtitle}</p>
+        <h1 className="text-2xl font-bold text-gray-900 mt-0.5 leading-tight">{assignment.title}</h1>
+        <p className="text-sm text-gray-400 mt-1">{assignment.subtitle}</p>
       </div>
 
       <AssignmentDetailClient assignment={assignment} />

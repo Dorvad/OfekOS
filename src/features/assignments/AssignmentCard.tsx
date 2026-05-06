@@ -9,26 +9,50 @@ interface AssignmentCardProps {
   currentPhaseIndex: number;
 }
 
-const accentMap: Record<
-  string,
-  { ring: string; bg: string; text: string; border: string; button: string }
-> = {
-  amber:  { ring: "#f59e0b", bg: "bg-amber-50",   text: "text-amber-700",   border: "border-amber-200", button: "bg-amber-500 hover:bg-amber-600" },
-  violet: { ring: "#8b5cf6", bg: "bg-violet-50",  text: "text-violet-700",  border: "border-violet-200", button: "bg-violet-500 hover:bg-violet-600" },
-  teal:   { ring: "#14b8a6", bg: "bg-teal-50",    text: "text-teal-700",    border: "border-teal-200", button: "bg-teal-500 hover:bg-teal-600" },
-  emerald:{ ring: "#10b981", bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", button: "bg-emerald-500 hover:bg-emerald-600" },
-  orange: { ring: "#f97316", bg: "bg-orange-50",  text: "text-orange-700",  border: "border-orange-200", button: "bg-orange-500 hover:bg-orange-600" },
-  indigo: { ring: "#6366f1", bg: "bg-indigo-50",  text: "text-indigo-700",  border: "border-indigo-200", button: "bg-indigo-500 hover:bg-indigo-600" },
+const accentStripe: Record<string, string> = {
+  amber:   "bg-amber-400",
+  violet:  "bg-violet-500",
+  teal:    "bg-teal-400",
+  emerald: "bg-emerald-400",
+  orange:  "bg-orange-400",
+  indigo:  "bg-indigo-500",
+};
+
+const accentRing: Record<string, string> = {
+  amber:   "#f59e0b",
+  violet:  "#8b5cf6",
+  teal:    "#14b8a6",
+  emerald: "#10b981",
+  orange:  "#f97316",
+  indigo:  "#6366f1",
+};
+
+const accentNumBg: Record<string, string> = {
+  amber:   "bg-amber-50 text-amber-700",
+  violet:  "bg-violet-50 text-violet-700",
+  teal:    "bg-teal-50 text-teal-700",
+  emerald: "bg-emerald-50 text-emerald-700",
+  orange:  "bg-orange-50 text-orange-700",
+  indigo:  "bg-indigo-50 text-indigo-700",
+};
+
+const accentButton: Record<string, string> = {
+  amber:   "bg-amber-500 hover:bg-amber-600 text-white",
+  violet:  "bg-violet-500 hover:bg-violet-600 text-white",
+  teal:    "bg-teal-500 hover:bg-teal-600 text-white",
+  emerald: "bg-emerald-500 hover:bg-emerald-600 text-white",
+  orange:  "bg-orange-500 hover:bg-orange-600 text-white",
+  indigo:  "bg-indigo-500 hover:bg-indigo-600 text-white",
 };
 
 const statusLabels: Record<AssignmentStatus, string> = {
   locked:    "נעול",
-  available: "זמין",
-  briefing:  "בהכנה",
-  exploring: "חוקר",
-  creating:  "יוצר",
-  insight:   "תובנה",
-  submitted: "הוגש",
+  available: "לא התחלת",
+  briefing:  "קריאת משימה",
+  exploring: "בחקירה",
+  creating:  "ביצירה",
+  insight:   "כתיבת תובנה",
+  submitted: "הושלם",
   achieved:  "הושג",
 };
 
@@ -37,80 +61,103 @@ export default function AssignmentCard({
   status,
   currentPhaseIndex,
 }: AssignmentCardProps) {
-  const accent = accentMap[assignment.accentColor] ?? accentMap.indigo;
+  const color = assignment.accentColor;
+  const ring = accentRing[color] ?? accentRing.indigo;
   const totalPhases = assignment.phases.length;
   const pct = totalPhases > 1 ? (currentPhaseIndex / (totalPhases - 1)) * 100 : 0;
   const isLocked = !assignment.isUnlocked || status === "locked";
   const isDone = status === "submitted" || status === "achieved";
 
-  // SVG donut ring
-  const r = 16;
-  const circ = 2 * Math.PI * r; // ~100.5
+  const r = 15;
+  const circ = 2 * Math.PI * r;
   const dash = (pct / 100) * circ;
 
-  return (
+  const card = (
     <div
-      className={`relative rounded-2xl border-2 p-5 flex flex-col gap-3 transition-shadow ${
-        isLocked ? "opacity-60 bg-gray-50 border-gray-200" : `${accent.bg} ${accent.border}`
+      className={`relative rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm flex flex-col transition-shadow ${
+        isLocked ? "opacity-55" : "hover:shadow-md"
       }`}
     >
-      {/* Top row: session badge + donut ring */}
-      <div className="flex items-start justify-between">
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isLocked ? "bg-gray-200 text-gray-500" : `bg-white ${accent.text}`}`}>
-          מפגש {assignment.sessionNumber}
-        </span>
+      {/* Color stripe */}
+      <div className={`h-1 w-full ${isLocked ? "bg-gray-200" : accentStripe[color]}`} />
 
-        {/* Donut progress ring */}
-        <svg viewBox="0 0 44 44" className="w-11 h-11 -rotate-90" aria-hidden="true">
-          <circle cx="22" cy="22" r={r} fill="none" stroke="#e5e7eb" strokeWidth="4" />
-          {!isLocked && (
-            <circle
-              cx="22"
-              cy="22"
-              r={r}
-              fill="none"
-              stroke={accent.ring}
-              strokeWidth="4"
-              strokeDasharray={`${dash} ${circ}`}
-              strokeLinecap="round"
-            />
-          )}
-        </svg>
-      </div>
+      <div className="p-5 flex flex-col gap-3 flex-1">
+        {/* Top row */}
+        <div className="flex items-start justify-between gap-3">
+          <span className={`text-xs font-bold px-2 py-1 rounded-lg shrink-0 ${
+            isLocked ? "bg-gray-100 text-gray-400" : accentNumBg[color]
+          }`}>
+            מפגש {assignment.sessionNumber}
+          </span>
 
-      {/* Content */}
-      <div className="flex-1">
-        <h3 className="font-bold text-gray-900 leading-snug">{assignment.title}</h3>
-        <p className="text-sm text-gray-500 mt-0.5">{assignment.subtitle}</p>
-      </div>
+          {/* Donut ring */}
+          <svg viewBox="0 0 40 40" className="w-10 h-10 -rotate-90 shrink-0" aria-hidden="true">
+            <circle cx="20" cy="20" r={r} fill="none" stroke="#f3f4f6" strokeWidth="3.5" />
+            {!isLocked && pct > 0 && (
+              <circle
+                cx="20" cy="20" r={r}
+                fill="none"
+                stroke={ring}
+                strokeWidth="3.5"
+                strokeDasharray={`${dash} ${circ}`}
+                strokeLinecap="round"
+              />
+            )}
+            {isDone && (
+              <g transform="rotate(90, 20, 20)">
+                <polyline
+                  points="13,20 18,25 27,15"
+                  fill="none"
+                  stroke={ring}
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </g>
+            )}
+          </svg>
+        </div>
 
-      {/* Status badge */}
-      <div className="flex items-center justify-between gap-2">
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-          isDone ? "bg-emerald-100 text-emerald-700" :
-          isLocked ? "bg-gray-100 text-gray-500" :
-          `bg-white ${accent.text}`
-        }`}>
-          {statusLabels[status]}
-        </span>
+        {/* Title */}
+        <div className="flex-1">
+          <h3 className={`font-bold text-base leading-snug ${isLocked ? "text-gray-400" : "text-gray-900"}`}>
+            {assignment.title}
+          </h3>
+          <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{assignment.subtitle}</p>
+        </div>
 
-        {isLocked ? (
-          <span className="text-xs text-gray-400 flex items-center gap-1">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
+        {/* Footer */}
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-50">
+          <span className={`text-xs font-medium ${
+            isDone ? "text-emerald-600" :
+            isLocked ? "text-gray-400" :
+            "text-gray-500"
+          }`}>
+            {isDone ? "✓ " : ""}{statusLabels[status]}
+          </span>
+
+          {isLocked ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-4 h-4 text-gray-300">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
-            נעול
-          </span>
-        ) : (
-          <Link
-            href={`/participant/assignments/${assignment.id}`}
-            className={`text-xs font-semibold text-white px-3 py-1.5 rounded-lg transition-colors ${accent.button}`}
-          >
-            {isDone ? "צפה ←" : status === "available" ? "פתח ←" : "המשך ←"}
-          </Link>
-        )}
+          ) : (
+            <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+              isDone ? "bg-emerald-500 hover:bg-emerald-600 text-white" : accentButton[color]
+            }`}>
+              {isDone ? "צפה ←" : status === "available" ? "התחל ←" : "המשך ←"}
+            </span>
+          )}
+        </div>
       </div>
     </div>
+  );
+
+  if (isLocked) return card;
+
+  return (
+    <Link href={`/participant/assignments/${assignment.id}`} className="block">
+      {card}
+    </Link>
   );
 }

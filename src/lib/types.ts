@@ -1,4 +1,4 @@
-export type Role = "participant" | "manager" | "facilitator" | "admin";
+export type Role = "participant" | "admin";
 
 export type SessionStatus = "upcoming" | "active" | "completed";
 

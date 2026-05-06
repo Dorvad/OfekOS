@@ -53,7 +53,7 @@ export default function PreparePage() {
 
   if (!hydrated) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
         <div className="h-20 bg-gray-100 rounded-2xl animate-pulse" />
         <div className="h-64 bg-gray-100 rounded-2xl animate-pulse" />
       </div>
@@ -61,10 +61,10 @@ export default function PreparePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="max-w-2xl mx-auto px-4 py-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">הכנה למפגש</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-xl font-bold text-gray-900">הכנה למפגש</h1>
+        <p className="text-sm text-gray-400 mt-0.5">
           {filledCount > 0 ? `${filledCount} מתוך 4 שדות מולאו` : "מלא את 4 השדות לפני המפגש הבא"}
         </p>
       </div>
