@@ -9,8 +9,8 @@ export default function Header() {
           <span className="text-lg font-bold text-gray-900 tracking-tight">
             OfekOS
           </span>
-          <span className="hidden sm:inline text-xs text-gray-400 border-l border-gray-200 pl-3">
-            Management Development
+          <span className="hidden sm:inline text-xs text-gray-400 border-r border-gray-200 pr-3">
+            פיתוח מנהלים
           </span>
         </Link>
 

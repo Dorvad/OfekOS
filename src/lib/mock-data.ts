@@ -10,6 +10,7 @@ import type {
   Program,
   WorkbookEntry,
   RoleConfig,
+  Assignment,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -662,3 +663,210 @@ export const MOCK_WORKBOOK_ENTRIES: WorkbookEntry[] = [
     isShared: true,
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Assignments (gamified homework — participant-only)
+// ---------------------------------------------------------------------------
+
+export const MOCK_ASSIGNMENTS: Assignment[] = [
+  {
+    id: "a1",
+    sessionNumber: 1,
+    title: "המצפן שלי",
+    subtitle: "הגדרת תפקיד המנהל",
+    missionBrief:
+      "המעבר מתפקיד מומחה לתפקיד מנהל הוא אחד השינויים המשמעותיים ביותר בקריירה. המטלה שלך: למפות את תפקידך כמנהל — מה אתה אחראי עליו, מה הצוות אחראי עליו, ומה אתה רוצה לשנות בדרך שאתה עובד.",
+    accentColor: "amber",
+    achievementLabel: "מגדיר תפקיד",
+    isUnlocked: true,
+    phases: [
+      {
+        id: "briefing",
+        label: "הכרת המשימה",
+        description: "קרא את המשימה והבן את המטרה",
+      },
+      {
+        id: "exploring",
+        label: "חקירה",
+        description: "מלא את ארבעת הרבעים",
+      },
+      {
+        id: "creating",
+        label: "יצירה",
+        description: "סכם את התובנה המרכזית שלך",
+      },
+      {
+        id: "insight",
+        label: "תובנה",
+        description: "שתף את מה שלמדת",
+      },
+    ],
+  },
+  {
+    id: "a2",
+    sessionNumber: 2,
+    title: "בונה השיחה",
+    subtitle: "מתן משוב אפקטיבי",
+    missionBrief:
+      "משוב הוא הכלי המרכזי של המנהל. המטלה שלך: לבנות שיחת משוב אמיתית עם אחד מאנשי הצוות שלך, צעד אחר צעד, תוך שימוש במודל SBI.",
+    accentColor: "violet",
+    achievementLabel: "נותן משוב",
+    isUnlocked: true,
+    phases: [
+      {
+        id: "briefing",
+        label: "הכרת המשימה",
+        description: "קרא את המשימה והבן את המטרה",
+      },
+      {
+        id: "exploring",
+        label: "חקירה",
+        description: "בנה את שיחת המשוב שלב אחר שלב",
+      },
+      {
+        id: "creating",
+        label: "יצירה",
+        description: "כתוב את הניסוח הסופי",
+      },
+      {
+        id: "insight",
+        label: "תובנה",
+        description: "שתף את מה שלמדת",
+      },
+    ],
+  },
+  {
+    id: "a3",
+    sessionNumber: 3,
+    title: "מפת הצוות",
+    subtitle: "הכרת האנשים שאני מוביל",
+    missionBrief:
+      "מנהל טוב מכיר את האנשים שלו. המטלה שלך: למפות את כל חברי הצוות על פי חוזקות, מניעים, וצרכים — וזהה מה כל אחד צריך ממך.",
+    accentColor: "teal",
+    achievementLabel: "מכיר את הצוות",
+    isUnlocked: false,
+    phases: [
+      {
+        id: "briefing",
+        label: "הכרת המשימה",
+        description: "קרא את המשימה והבן את המטרה",
+      },
+      {
+        id: "exploring",
+        label: "חקירה",
+        description: "הוסף חברי צוות ומפה אותם",
+      },
+      {
+        id: "creating",
+        label: "יצירה",
+        description: "הגדר מה כל אחד צריך ממך",
+      },
+      {
+        id: "insight",
+        label: "תובנה",
+        description: "שתף את מה שלמדת",
+      },
+    ],
+  },
+  {
+    id: "a4",
+    sessionNumber: 4,
+    title: "ניהול כלפי מעלה",
+    subtitle: "בניית השפעה עם בעלי עניין",
+    missionBrief:
+      "כמנהל, אתה עובד לא רק מול הצוות אלא גם מול הממונים עליך ובעלי עניין. המטלה שלך: למפות את בעלי העניין שלך ולבנות תכנית השפעה.",
+    accentColor: "emerald",
+    achievementLabel: "בונה קואליציות",
+    isUnlocked: false,
+    phases: [
+      {
+        id: "briefing",
+        label: "הכרת המשימה",
+        description: "קרא את המשימה והבן את המטרה",
+      },
+      {
+        id: "exploring",
+        label: "חקירה",
+        description: "מפה את בעלי העניין שלך",
+      },
+      {
+        id: "creating",
+        label: "יצירה",
+        description: "בנה תכנית השפעה",
+      },
+      {
+        id: "insight",
+        label: "תובנה",
+        description: "שתף את מה שלמדת",
+      },
+    ],
+  },
+  {
+    id: "a5",
+    sessionNumber: 5,
+    title: "מטריצת עדיפויות",
+    subtitle: "האצלת סמכויות ועדיפויות",
+    missionBrief:
+      "האצלה היא לא פריקת עבודה — היא פיתוח הצוות. המטלה שלך: למפות את המשימות שלך ב-2×2 מטריצה לפי דחיפות וחשיבות ולהחליט מה להאציל ולמי.",
+    accentColor: "orange",
+    achievementLabel: "מאציל בחוכמה",
+    isUnlocked: false,
+    phases: [
+      {
+        id: "briefing",
+        label: "הכרת המשימה",
+        description: "קרא את המשימה והבן את המטרה",
+      },
+      {
+        id: "exploring",
+        label: "חקירה",
+        description: "מיין משימות לפי דחיפות וחשיבות",
+      },
+      {
+        id: "creating",
+        label: "יצירה",
+        description: "הגדר מה להאציל ולמי",
+      },
+      {
+        id: "insight",
+        label: "תובנה",
+        description: "שתף את מה שלמדת",
+      },
+    ],
+  },
+  {
+    id: "a6",
+    sessionNumber: 6,
+    title: "מנהיגות שינוי",
+    subtitle: "הובלת שינוי בצוות",
+    missionBrief:
+      "שינוי הוא הקבוע היחיד בניהול. המטלה שלך: לבנות תכנית לשינוי אחד שאתה מוביל עכשיו — מה השינוי, מי המושפעים, ומה האסטרטגיה שלך.",
+    accentColor: "indigo",
+    achievementLabel: "מוביל שינוי",
+    isUnlocked: false,
+    phases: [
+      {
+        id: "briefing",
+        label: "הכרת המשימה",
+        description: "קרא את המשימה והבן את המטרה",
+      },
+      {
+        id: "exploring",
+        label: "חקירה",
+        description: "תאר את השינוי ומי מושפע",
+      },
+      {
+        id: "creating",
+        label: "יצירה",
+        description: "בנה את תכנית השינוי שלך",
+      },
+      {
+        id: "insight",
+        label: "תובנה",
+        description: "שתף את מה שלמדת",
+      },
+    ],
+  },
+];
+
+export const ASSIGNMENT_IDS = MOCK_ASSIGNMENTS.map((a) => a.id);
