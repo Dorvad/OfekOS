@@ -38,13 +38,13 @@ export default function ResourcesList({ resources, sessions }: ResourcesListProp
       />
 
       <p className="text-xs text-gray-400 mb-4">
-        Showing {filtered.length} resource{filtered.length !== 1 ? "s" : ""}
+        מציג {filtered.length} משאבים
       </p>
 
       {filtered.length === 0 ? (
         <EmptyState
-          message="No resources match your filters"
-          description="Try clearing one of the filters above"
+          message="לא נמצאו משאבים"
+          description="נסה לנקות אחד מהמסננים"
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

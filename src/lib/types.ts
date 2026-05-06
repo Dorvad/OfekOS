@@ -125,3 +125,43 @@ export interface RoleConfig {
   borderColor: string;
   accentColor: string;
 }
+
+// ---------------------------------------------------------------------------
+// Assignment system
+// ---------------------------------------------------------------------------
+
+export type AssignmentStatus =
+  | "locked"
+  | "available"
+  | "briefing"
+  | "exploring"
+  | "creating"
+  | "insight"
+  | "submitted"
+  | "achieved";
+
+export type AssignmentAccent =
+  | "amber"
+  | "violet"
+  | "teal"
+  | "emerald"
+  | "orange"
+  | "indigo";
+
+export interface AssignmentPhase {
+  id: string;
+  label: string;
+  description: string;
+}
+
+export interface Assignment {
+  id: string;
+  sessionNumber: number;
+  title: string;
+  subtitle: string;
+  missionBrief: string;
+  accentColor: AssignmentAccent;
+  achievementLabel: string;
+  phases: AssignmentPhase[];
+  isUnlocked: boolean;
+}

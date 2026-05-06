@@ -10,6 +10,13 @@ const typeVariant: Record<string, BadgeVariant> = {
   video: "success",
 };
 
+const typeLabel: Record<string, string> = {
+  file: "קובץ",
+  template: "תבנית",
+  link: "קישור",
+  video: "סרטון",
+};
+
 function FileIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
@@ -67,11 +74,11 @@ export default function ResourceCard({ resource, sessionTitle }: ResourceCardPro
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <Badge label={resource.type} variant={typeVariant[resource.type] ?? "default"} />
+            <Badge label={typeLabel[resource.type] ?? resource.type} variant={typeVariant[resource.type] ?? "default"} />
             {sessionTitle ? (
-              <span className="text-[10px] text-gray-400">Session: {sessionTitle}</span>
+              <span className="text-[10px] text-gray-400">מפגש: {sessionTitle}</span>
             ) : (
-              <span className="text-[10px] text-gray-400">Program resource</span>
+              <span className="text-[10px] text-gray-400">משאב תוכנית</span>
             )}
           </div>
           <p className="text-sm font-medium text-gray-900">{resource.title}</p>
@@ -85,7 +92,7 @@ export default function ResourceCard({ resource, sessionTitle }: ResourceCardPro
           rel="noopener noreferrer"
           className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
         >
-          View resource →
+          פתח משאב ←
         </a>
       </div>
     </Card>
