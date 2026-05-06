@@ -1,4 +1,6 @@
+import { MOCK_RESOURCES, MOCK_SESSIONS } from "@/lib/mock-data";
 import ParticipantPageHeader from "@/features/participant/ParticipantPageHeader";
+import ResourcesList from "@/features/resources/ResourcesList";
 
 export default function ResourcesPage() {
   return (
@@ -7,7 +9,7 @@ export default function ResourcesPage() {
         title="Resources"
         subtitle="Files, templates, and links for your program"
       />
-      <p className="text-gray-500 text-sm">Resources library — coming in Phase 8.</p>
+      <ResourcesList resources={MOCK_RESOURCES} sessions={MOCK_SESSIONS} />
     </div>
   );
 }
