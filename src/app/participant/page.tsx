@@ -16,13 +16,6 @@ export default function ParticipantDashboard() {
   const activeSession = MOCK_SESSIONS.find((s) => s.status === "active");
   const completedSessions = MOCK_SESSIONS.filter((s) => s.status === "completed");
 
-  // Open tasks: those on the active session with not_started or in_progress default status
-  const openTasks = MOCK_TASKS.filter(
-    (t) =>
-      t.sessionId === activeSession?.id &&
-      (t.defaultStatus === "not_started" || t.defaultStatus === "in_progress")
-  );
-
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
       {/* Welcome header */}
@@ -43,10 +36,11 @@ export default function ParticipantDashboard() {
         </div>
       )}
 
-      {/* Open tasks */}
+      {/* Open tasks — client component, reads localStorage */}
       <div className="mb-5">
         <OpenTasksSummary
-          openCount={openTasks.length}
+          tasks={MOCK_TASKS}
+          sessions={MOCK_SESSIONS}
           activeSession={activeSession}
         />
       </div>
@@ -57,10 +51,8 @@ export default function ParticipantDashboard() {
           completedCount={completedSessions.length}
           totalCount={MOCK_SESSIONS.length}
         />
-        <WorkbookProgressSummary
-          sectionsWithContent={0}
-          totalSections={MOCK_WORKBOOK_SECTIONS.length}
-        />
+        {/* Client component, reads localStorage */}
+        <WorkbookProgressSummary sections={MOCK_WORKBOOK_SECTIONS} />
       </div>
 
       {/* Quick access */}

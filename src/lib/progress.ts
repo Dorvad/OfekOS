@@ -34,13 +34,15 @@ export function computeOverallProgress(sessions: Session[]): number {
 
 export function getOpenTaskCount(
   tasks: Task[],
+  sessions: Session[],
   taskStatuses: Record<string, boolean>
 ): number {
-  return tasks.filter(
-    (t) =>
-      t.defaultStatus !== "locked" &&
-      !taskStatuses[t.id]
-  ).length;
+  return tasks.filter((t) => {
+    if (t.defaultStatus === "locked") return false;
+    const session = sessions.find((s) => s.id === t.sessionId);
+    if (!session || session.status === "upcoming") return false;
+    return !taskStatuses[t.id];
+  }).length;
 }
 
 export function computeSessionTaskProgress(

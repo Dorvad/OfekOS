@@ -1,19 +1,38 @@
+"use client";
+
 import Link from "next/link";
 import Card from "@/components/ui/Card";
-import type { Session } from "@/lib/types";
+import { useState, useEffect } from "react";
+import { getAllTaskCompletions } from "@/lib/task-storage";
+import { getOpenTaskCount } from "@/lib/progress";
+import type { Task, Session } from "@/lib/types";
 
 interface OpenTasksSummaryProps {
-  openCount: number;
+  tasks: Task[];
+  sessions: Session[];
   activeSession: Session | undefined;
 }
 
 export default function OpenTasksSummary({
-  openCount,
+  tasks,
+  sessions,
   activeSession,
 }: OpenTasksSummaryProps) {
+  const [openCount, setOpenCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    const statuses = getAllTaskCompletions(tasks.map((t) => t.id));
+    setOpenCount(getOpenTaskCount(tasks, sessions, statuses));
+  }, [tasks, sessions]);
+
   const sessionHref = activeSession
     ? `/participant/sessions/${activeSession.id}`
     : "/participant/journey";
+
+  // Show skeleton while hydrating
+  if (openCount === null) {
+    return <div className="h-16 bg-gray-100 rounded-xl animate-pulse" />;
+  }
 
   if (openCount === 0) {
     return (

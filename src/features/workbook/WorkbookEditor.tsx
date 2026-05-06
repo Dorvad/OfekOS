@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Button from "@/components/ui/Button";
-import { STORAGE_KEYS } from "@/lib/storage-keys";
+import { getWorkbookEntry, setWorkbookEntry } from "@/lib/workbook-storage";
 import { formatDate } from "@/lib/utils";
 import type { WorkbookSection, WorkbookPrivacy } from "@/lib/types";
 
@@ -18,27 +18,18 @@ export default function WorkbookEditor({ section }: WorkbookEditorProps) {
   const [justSaved, setJustSaved] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.workbookContent(section.id));
-    const storedPrivacy = localStorage.getItem(STORAGE_KEYS.workbookPrivacy(section.id));
-    const storedSavedAt = localStorage.getItem(STORAGE_KEYS.workbookSavedAt(section.id));
-
-    if (stored) {
-      setContent(stored);
-      setSavedContent(stored);
-    }
-    if (storedPrivacy === "shared" || storedPrivacy === "private") {
-      setPrivacy(storedPrivacy);
-    }
-    if (storedSavedAt) {
-      setSavedAt(storedSavedAt);
+    const entry = getWorkbookEntry(section.id);
+    if (entry) {
+      setContent(entry.content);
+      setSavedContent(entry.content);
+      setPrivacy(entry.privacy);
+      setSavedAt(entry.savedAt);
     }
   }, [section.id]);
 
   function handleSave() {
-    localStorage.setItem(STORAGE_KEYS.workbookContent(section.id), content);
-    localStorage.setItem(STORAGE_KEYS.workbookPrivacy(section.id), privacy);
     const now = new Date().toISOString();
-    localStorage.setItem(STORAGE_KEYS.workbookSavedAt(section.id), now);
+    setWorkbookEntry(section.id, content, privacy, now);
     setSavedContent(content);
     setSavedAt(now);
     setJustSaved(true);
@@ -47,7 +38,8 @@ export default function WorkbookEditor({ section }: WorkbookEditorProps) {
 
   function handlePrivacyToggle(next: WorkbookPrivacy) {
     setPrivacy(next);
-    localStorage.setItem(STORAGE_KEYS.workbookPrivacy(section.id), next);
+    const now = savedAt ?? new Date().toISOString();
+    setWorkbookEntry(section.id, content, next, now);
   }
 
   const hasUnsavedChanges = content !== savedContent;

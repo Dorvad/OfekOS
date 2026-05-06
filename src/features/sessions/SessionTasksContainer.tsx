@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import TaskItem from "./TaskItem";
-import { STORAGE_KEYS } from "@/lib/storage-keys";
+import { getTaskCompleted, setTaskCompleted, getAllTaskCompletions } from "@/lib/task-storage";
 import { deriveTaskStatus } from "@/lib/progress";
 import type { Task, SessionStatus } from "@/lib/types";
 
@@ -19,22 +19,13 @@ export default function SessionTasksContainer({
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const initial: Record<string, boolean> = {};
-    tasks.forEach((t) => {
-      initial[t.id] =
-        localStorage.getItem(STORAGE_KEYS.task(t.id)) === "completed";
-    });
-    setCompleted(initial);
+    setCompleted(getAllTaskCompletions(tasks.map((t) => t.id)));
     setHydrated(true);
   }, [tasks]);
 
   function handleToggle(taskId: string) {
     const next = !completed[taskId];
-    if (next) {
-      localStorage.setItem(STORAGE_KEYS.task(taskId), "completed");
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.task(taskId));
-    }
+    setTaskCompleted(taskId, next);
     setCompleted((prev) => ({ ...prev, [taskId]: next }));
   }
 

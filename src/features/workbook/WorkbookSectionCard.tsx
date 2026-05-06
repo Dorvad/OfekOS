@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { STORAGE_KEYS } from "@/lib/storage-keys";
+import { getWorkbookEntry } from "@/lib/workbook-storage";
 import type { WorkbookSection } from "@/lib/types";
 
 interface WorkbookSectionCardProps {
@@ -18,10 +18,9 @@ export default function WorkbookSectionCard({
   const [isShared, setIsShared] = useState(false);
 
   useEffect(() => {
-    const content = localStorage.getItem(STORAGE_KEYS.workbookContent(section.id));
-    const privacy = localStorage.getItem(STORAGE_KEYS.workbookPrivacy(section.id));
-    setHasContent(!!content && content.trim().length > 0);
-    setIsShared(privacy === "shared");
+    const entry = getWorkbookEntry(section.id);
+    setHasContent(!!entry && entry.content.trim().length > 0);
+    setIsShared(entry?.privacy === "shared");
   }, [section.id]);
 
   return (
