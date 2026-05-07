@@ -23,9 +23,9 @@ import type {
 export const ROLES: RoleConfig[] = [
   {
     id: "participant",
-    label: "Participant",
+    label: "משתתף/ת",
     description:
-      "המסע האישי שלך — מטלות, תובנות, הכנה למפגשים, וחומרי למידה.",
+      "המסע האישי שלך — מטלות, תיק המנהל, הכנה למפגשים, וחומרי למידה.",
     href: "/participant",
     color: "text-indigo-700",
     bgColor: "bg-indigo-50",
@@ -34,9 +34,9 @@ export const ROLES: RoleConfig[] = [
   },
   {
     id: "admin",
-    label: "Admin",
+    label: "מנהל/ת תוכנית",
     description:
-      "Configure programs, manage users, and access full operational analytics.",
+      "ניהול תוכן, משתתפים, נעילת מטלות וצפייה בנתוני השלמה.",
     href: "/admin",
     color: "text-slate-700",
     bgColor: "bg-slate-100",
@@ -59,7 +59,7 @@ export const MOCK_USER: User = {
 
 export const MOCK_PROGRAM: Program = {
   id: "prog-1",
-  name: "Leadership Development Cohort — Spring 2025",
+  name: "תוכנית אופק — פיתוח מנהלים בכירים",
   startDate: "2025-03-01",
   endDate: "2025-08-31",
   cohortSize: 24,
@@ -74,46 +74,54 @@ export const MOCK_PROGRAM: Program = {
 export const MOCK_SESSIONS: Session[] = [
   {
     id: "s1",
-    title: "Foundations of Management",
+    title: "יסודות המנהל החדש",
     date: "2025-03-15",
     status: "completed",
     description:
-      "Establishing your management identity and defining your leadership style.",
+      "גיבוש זהות ניהולית וכיוון אישי — המעבר מביצוע להובלה.",
     durationMinutes: 120,
   },
   {
     id: "s2",
-    title: "Giving Effective Feedback",
+    title: "מתן משוב",
     date: "2025-04-10",
     status: "completed",
     description:
-      "Frameworks for constructive, timely, and actionable feedback conversations.",
+      "כלים לשיחות משוב אפקטיביות — ספציפיות, ממוקדות ומקדמות.",
     durationMinutes: 90,
   },
   {
     id: "s3",
-    title: "Difficult Conversations",
+    title: "שיחות עם הצוות",
     date: "2025-05-08",
     status: "active",
     description:
-      "Navigating complex interpersonal situations with clarity and care.",
+      "ניהול שיחות קשות ומיפוי מערכת הצוות כמנוע אנרגיה.",
     durationMinutes: 120,
   },
   {
     id: "s4",
-    title: "Delegation & Empowerment",
+    title: "ניהול כלפי מעלה",
     date: "2025-06-12",
     status: "upcoming",
     description:
-      "Building trust and accountability through intentional delegation.",
+      "השפעה, הנעה וקידום נושאים מול הממונה מתוך ראייה אסטרטגית.",
     durationMinutes: 90,
   },
   {
     id: "s5",
-    title: "Strategic Thinking for Managers",
+    title: "ניהול זמן ועדיפויות",
     date: "2025-07-10",
     status: "upcoming",
-    description: "Shifting from operational to strategic mindset.",
+    description: "עבודה תחת עומס — תיעדוף, האצלה ושמירה על הקצב הניהולי.",
+    durationMinutes: 120,
+  },
+  {
+    id: "s6",
+    title: "הובלת שינוי",
+    date: "2025-08-07",
+    status: "upcoming",
+    description: "אבחון התנגדות לשינוי ובניית שיחה שמכילה ומקדמת.",
     durationMinutes: 120,
   },
 ];
@@ -730,7 +738,7 @@ export const MOCK_WORKBOOK_ENTRIES: WorkbookEntry[] = [
   {
     id: "w1",
     sessionId: "s1",
-    sessionTitle: "Foundations of Management",
+    sessionTitle: "יסודות המנהל החדש",
     createdAt: "2025-03-15",
     updatedAt: "2025-03-18",
     isShared: false,
@@ -738,7 +746,7 @@ export const MOCK_WORKBOOK_ENTRIES: WorkbookEntry[] = [
   {
     id: "w2",
     sessionId: "s2",
-    sessionTitle: "Giving Effective Feedback",
+    sessionTitle: "מתן משוב",
     createdAt: "2025-04-10",
     updatedAt: "2025-04-14",
     isShared: true,
