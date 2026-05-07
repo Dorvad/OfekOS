@@ -1,7 +1,26 @@
 import Link from "next/link";
-import { MOCK_USER, MOCK_PROGRAM, MOCK_ASSIGNMENTS } from "@/lib/mock-data";
+import { MOCK_USER, MOCK_PROGRAM, MOCK_ASSIGNMENTS, MOCK_SESSIONS } from "@/lib/mock-data";
 import Card from "@/components/ui/Card";
 import ProgramAxisClient from "@/features/assignments/ProgramAxisClient";
+import PrepareReminderClient from "@/features/assignments/PrepareReminderClient";
+
+const SESSION_TITLES_HE: Record<string, string> = {
+  s1: "יסודות הניהול",
+  s2: "מתן משוב אפקטיבי",
+  s3: "שיחות קשות",
+  s4: "האצלה והסמכה",
+  s5: "חשיבה אסטרטגית",
+  s6: "מנהיגות שינוי",
+};
+
+function formatDateHe(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("he-IL", { day: "numeric", month: "long" });
+  } catch {
+    return dateStr;
+  }
+}
 
 const accentHero: Record<string, string> = {
   amber:   "from-amber-400 to-amber-500",
@@ -16,6 +35,10 @@ export default function ParticipantDashboard() {
   const currentAssignment = MOCK_ASSIGNMENTS.find((a) => a.isUnlocked);
   const unlockedCount = MOCK_ASSIGNMENTS.filter((a) => a.isUnlocked).length;
   const firstName = MOCK_USER.name.split(" ")[0];
+
+  const nextSession = MOCK_SESSIONS.find((s) => s.status === "upcoming" || s.status === "active");
+  const nextSessionNumber = nextSession ? parseInt(nextSession.id.replace("s", ""), 10) : null;
+  const nextSessionTitleHe = nextSession ? (SESSION_TITLES_HE[nextSession.id] ?? nextSession.title) : null;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
@@ -61,7 +84,7 @@ export default function ParticipantDashboard() {
         </div>
         <ProgramAxisClient assignments={MOCK_ASSIGNMENTS} />
         <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
-          <span className="text-xs text-gray-400">6 מטלות · 4 שלבים כל אחת</span>
+          <span className="text-xs text-gray-400">6 מטלות · 3 שלבים כל אחת</span>
           <Link
             href="/participant/assignments"
             className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
@@ -70,6 +93,15 @@ export default function ParticipantDashboard() {
           </Link>
         </div>
       </Card>
+
+      {/* Prepare reminder */}
+      {nextSession && nextSessionNumber && nextSessionTitleHe && (
+        <PrepareReminderClient
+          sessionNumber={nextSessionNumber}
+          sessionTitle={nextSessionTitleHe}
+          sessionDate={formatDateHe(nextSession.date)}
+        />
+      )}
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-3">
