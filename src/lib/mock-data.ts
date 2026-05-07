@@ -11,6 +11,9 @@ import type {
   WorkbookEntry,
   RoleConfig,
   Assignment,
+  Cohort,
+  AdminResource,
+  Submission,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -22,34 +25,12 @@ export const ROLES: RoleConfig[] = [
     id: "participant",
     label: "Participant",
     description:
-      "Your personal learning journey — sessions, reflections, workbook, and AI practice space.",
+      "המסע האישי שלך — מטלות, תובנות, הכנה למפגשים, וחומרי למידה.",
     href: "/participant",
     color: "text-indigo-700",
     bgColor: "bg-indigo-50",
     borderColor: "border-indigo-200",
     accentColor: "bg-indigo-600",
-  },
-  {
-    id: "manager",
-    label: "Direct Manager",
-    description:
-      "Support your team members, review shared progress, and complete validation tasks.",
-    href: "/manager",
-    color: "text-emerald-700",
-    bgColor: "bg-emerald-50",
-    borderColor: "border-emerald-200",
-    accentColor: "bg-emerald-600",
-  },
-  {
-    id: "facilitator",
-    label: "Facilitator",
-    description:
-      "Manage cohorts, guide sessions, and monitor participant engagement and progress.",
-    href: "/facilitator",
-    color: "text-amber-700",
-    bgColor: "bg-amber-50",
-    borderColor: "border-amber-200",
-    accentColor: "bg-amber-500",
   },
   {
     id: "admin",
@@ -598,6 +579,7 @@ export const MOCK_PARTICIPANTS: Participant[] = [
     sessionsCompleted: 4,
     totalSessions: 5,
     managerId: "m1",
+    cohortId: "c1",
   },
   {
     id: "p2",
@@ -608,6 +590,7 @@ export const MOCK_PARTICIPANTS: Participant[] = [
     sessionsCompleted: 3,
     totalSessions: 5,
     managerId: "m1",
+    cohortId: "c2",
   },
   {
     id: "p3",
@@ -618,6 +601,7 @@ export const MOCK_PARTICIPANTS: Participant[] = [
     sessionsCompleted: 5,
     totalSessions: 5,
     managerId: "m2",
+    cohortId: "c1",
   },
   {
     id: "p4",
@@ -628,6 +612,7 @@ export const MOCK_PARTICIPANTS: Participant[] = [
     sessionsCompleted: 2,
     totalSessions: 5,
     managerId: "m2",
+    cohortId: "c2",
   },
   {
     id: "p5",
@@ -638,6 +623,102 @@ export const MOCK_PARTICIPANTS: Participant[] = [
     sessionsCompleted: 1,
     totalSessions: 5,
     managerId: "m3",
+    cohortId: null,
+  },
+];
+
+export const MOCK_COHORTS: Cohort[] = [
+  { id: "c1", name: "קבוצה א", participantIds: ["p1", "p3"] },
+  { id: "c2", name: "קבוצה ב", participantIds: ["p2", "p4"] },
+];
+
+export const MOCK_ADMIN_RESOURCES: AdminResource[] = [
+  {
+    id: "r1",
+    sessionNumber: 1,
+    name: "יסודות הניהול — מאמר מבוא",
+    type: "pdf",
+    url: null,
+    fileSizeKb: 2340,
+    description: "מאמר קצר על המעבר מתפקיד מומחה לתפקיד מנהל",
+    uploadedAt: "2025-03-10",
+  },
+  {
+    id: "r2",
+    sessionNumber: 2,
+    name: "מודל SBI — מדריך מעשי",
+    type: "link",
+    url: "https://example.com/sbi-guide",
+    fileSizeKb: null,
+    description: "מדריך מקוון לשימוש במודל Situation–Behaviour–Impact",
+    uploadedAt: "2025-04-05",
+  },
+  {
+    id: "r3",
+    sessionNumber: 3,
+    name: "ניהול שיחות קשות — תבנית",
+    type: "template",
+    url: null,
+    fileSizeKb: 480,
+    description: "תבנית Word להכנת שיחות קשות",
+    uploadedAt: "2025-05-01",
+  },
+  {
+    id: "r4",
+    sessionNumber: 1,
+    name: "סרטון: ניהול זמן כמנהל",
+    type: "video",
+    url: "https://example.com/time-mgmt",
+    fileSizeKb: null,
+    description: "סרטון 12 דקות על ניהול זמן",
+    uploadedAt: "2025-03-12",
+  },
+];
+
+export const MOCK_SUBMISSIONS: Submission[] = [
+  {
+    id: "sub1",
+    userId: "p3",
+    userName: "Roni Shapira",
+    assignmentId: "a1",
+    assignmentTitle: "כוכב הצפון שלי",
+    insight: "הבנתי שאני עדיין נמצא בחשיבה של עובד ולא של מנהל — אני פותר בעיות במקום לפתח את הצוות לפתור אותן.",
+    action: "אקיים שיחה שבועית קצרה של 15 דקות עם כל עובד כדי לעקוב אחרי ההתפתחות שלו.",
+    question: "כיצד מאזנים בין מתן עצמאות לצוות לבין שמירה על סטנדרטים?",
+    submittedAt: "2025-05-02",
+  },
+  {
+    id: "sub2",
+    userId: "p1",
+    userName: "Noa Katz",
+    assignmentId: "a1",
+    assignmentTitle: "כוכב הצפון שלי",
+    insight: "גיליתי שהכישורים שהביאו אותי לכאן — מומחיות טכנית ופתרון בעיות — הם לא מה שיוביל אותי הלאה.",
+    action: "אשתמש בשאלות פתוחות בשיחות הצוות השבועיות במקום לתת תשובות מיידיות.",
+    question: "מתי נכון להכריע לבד ומתי לערב את הצוות בהחלטה?",
+    submittedAt: "2025-05-01",
+  },
+  {
+    id: "sub3",
+    userId: "p2",
+    userName: "Yoav Levi",
+    assignmentId: "a2",
+    assignmentTitle: "שיחת משוב",
+    insight: "קשה לי לתת משוב שלילי — אני מרגיש שאני פוגע באדם. הבנתי שמשוב ספציפי וממוקד פחות מאיים מאשר הערות כלליות.",
+    action: "אתן משוב SBI אחד ספציפי עד סוף השבוע הקרוב לעמית שצריך אותו.",
+    question: "מה עושים כשהעובד מתגונן ומכחיש את ההתנהגות שתיארת?",
+    submittedAt: "2025-05-03",
+  },
+  {
+    id: "sub4",
+    userId: "p3",
+    userName: "Roni Shapira",
+    assignmentId: "a2",
+    assignmentTitle: "שיחת משוב",
+    insight: "המשוב שנתתי היה טוב מבחינה טכנית אבל פספסתי את הצד הרגשי — הייתי צריך לאפשר לו לדבר יותר.",
+    action: "אתחיל כל שיחת משוב בשאלה פתוחה לפני שאמסור את המשוב שלי.",
+    question: "איך מתמודדים עם עובד שמסכים בשיחה אבל לא משנה התנהגות בפועל?",
+    submittedAt: "2025-05-04",
   },
 ];
 
@@ -668,204 +749,84 @@ export const MOCK_WORKBOOK_ENTRIES: WorkbookEntry[] = [
 // Assignments (gamified homework — participant-only)
 // ---------------------------------------------------------------------------
 
+const PHASES = [
+  { id: "briefing", label: "המשימה",  description: "קרא את פרטי המשימה והבן מה עליך לעשות" },
+  { id: "main",     label: "ביצוע",   description: "בצע את המשימה צעד אחר צעד" },
+  { id: "insight",  label: "תובנה",   description: "סכם תובנה אחת, פעולה אחת ושאלה למפגש הבא" },
+];
+
 export const MOCK_ASSIGNMENTS: Assignment[] = [
   {
     id: "a1",
     sessionNumber: 1,
-    title: "המצפן שלי",
-    subtitle: "הגדרת תפקיד המנהל",
+    title: "כוכב הצפון שלי",
+    subtitle: "שיחה עם הממונה וגיבוש כיוון מנהיגותי",
     missionBrief:
-      "המעבר מתפקיד מומחה לתפקיד מנהל הוא אחד השינויים המשמעותיים ביותר בקריירה. המטלה שלך: למפות את תפקידך כמנהל — מה אתה אחראי עליו, מה הצוות אחראי עליו, ומה אתה רוצה לשנות בדרך שאתה עובד.",
+      "אחת המיומנויות החשובות ביותר של מנהל/ת היא להיות ברור/ה לגבי הכיוון האישי שלו/ה — מה הוא/היא רוצה להשיג בתפקיד, איפה הוא/היא נמצא/ת היום, ומה הפער שצריך לגשר. המטלה שלך: להתכונן לשיחה עם הממונה שלך, להציג את המיקודים שגיבשת, ולצאת עם פעולות קונקרטיות.",
     accentColor: "amber",
-    achievementLabel: "מגדיר תפקיד",
+    achievementLabel: "מגדיר כיוון",
     isUnlocked: true,
-    phases: [
-      {
-        id: "briefing",
-        label: "הכרת המשימה",
-        description: "קרא את המשימה והבן את המטרה",
-      },
-      {
-        id: "exploring",
-        label: "חקירה",
-        description: "מלא את ארבעת הרבעים",
-      },
-      {
-        id: "creating",
-        label: "יצירה",
-        description: "סכם את התובנה המרכזית שלך",
-      },
-      {
-        id: "insight",
-        label: "תובנה",
-        description: "שתף את מה שלמדת",
-      },
-    ],
+    phases: PHASES,
   },
   {
     id: "a2",
     sessionNumber: 2,
-    title: "בונה השיחה",
-    subtitle: "מתן משוב אפקטיבי",
+    title: "שיחת משוב או שיחה קשה",
+    subtitle: "הכנה, ביצוע ורפלקציה על שיחה מנהיגותית",
     missionBrief:
-      "משוב הוא הכלי המרכזי של המנהל. המטלה שלך: לבנות שיחת משוב אמיתית עם אחד מאנשי הצוות שלך, צעד אחר צעד, תוך שימוש במודל SBI.",
+      "משוב ושיחות קשות הם הכלים המרכזיים של המנהל/ת. המטלה שלך: לבחור שיחה שמחכה לך — משוב לעובד/ת או שיחה מורכבת — להתכונן אליה בצורה מובנית, לקיים אותה, ולהפיק ממנה לקחים.",
     accentColor: "violet",
-    achievementLabel: "נותן משוב",
+    achievementLabel: "מנהל שיחה",
     isUnlocked: true,
-    phases: [
-      {
-        id: "briefing",
-        label: "הכרת המשימה",
-        description: "קרא את המשימה והבן את המטרה",
-      },
-      {
-        id: "exploring",
-        label: "חקירה",
-        description: "בנה את שיחת המשוב שלב אחר שלב",
-      },
-      {
-        id: "creating",
-        label: "יצירה",
-        description: "כתוב את הניסוח הסופי",
-      },
-      {
-        id: "insight",
-        label: "תובנה",
-        description: "שתף את מה שלמדת",
-      },
-    ],
+    phases: PHASES,
   },
   {
     id: "a3",
     sessionNumber: 3,
-    title: "מפת הצוות",
-    subtitle: "הכרת האנשים שאני מוביל",
+    title: "הובלת צוות אפקטיבי",
+    subtitle: "מיפוי חוזקות, תפקידים לא פורמליים ו-Quick Win",
     missionBrief:
-      "מנהל טוב מכיר את האנשים שלו. המטלה שלך: למפות את כל חברי הצוות על פי חוזקות, מניעים, וצרכים — וזהה מה כל אחד צריך ממך.",
+      "מנהל/ת אפקטיבי/ת מכיר/ה את הצוות כמערכת — לא רק כיחידים. המטלה שלך: למפות את חברי הצוות, לזהות חוזקות ותפקידים לא פורמליים, ולבחור פעולה אחת שתחזק את הצוות בטווח הקרוב.",
     accentColor: "teal",
-    achievementLabel: "מכיר את הצוות",
+    achievementLabel: "מנהיג צוות",
     isUnlocked: false,
-    phases: [
-      {
-        id: "briefing",
-        label: "הכרת המשימה",
-        description: "קרא את המשימה והבן את המטרה",
-      },
-      {
-        id: "exploring",
-        label: "חקירה",
-        description: "הוסף חברי צוות ומפה אותם",
-      },
-      {
-        id: "creating",
-        label: "יצירה",
-        description: "הגדר מה כל אחד צריך ממך",
-      },
-      {
-        id: "insight",
-        label: "תובנה",
-        description: "שתף את מה שלמדת",
-      },
-    ],
+    phases: PHASES,
   },
   {
     id: "a4",
     sessionNumber: 4,
-    title: "ניהול כלפי מעלה",
-    subtitle: "בניית השפעה עם בעלי עניין",
+    title: "הנעה והשפעה — ניהול כלפי מעלה",
+    subtitle: "הכנה ושיחה ממוקדת פתרון עם הממונה",
     missionBrief:
-      "כמנהל, אתה עובד לא רק מול הצוות אלא גם מול הממונים עליך ובעלי עניין. המטלה שלך: למפות את בעלי העניין שלך ולבנות תכנית השפעה.",
+      "ניהול כלפי מעלה הוא מיומנות קריטית — להניע, להשפיע ולקדם נושאים חשובים מול הממונה שלך. המטלה שלך: לבחור נושא שחשוב לך, להתכונן לשיחה מנקודת המבט של הממונה, ולהציג פתרון ובקשה ברורה.",
     accentColor: "emerald",
-    achievementLabel: "בונה קואליציות",
+    achievementLabel: "משפיע כלפי מעלה",
     isUnlocked: false,
-    phases: [
-      {
-        id: "briefing",
-        label: "הכרת המשימה",
-        description: "קרא את המשימה והבן את המטרה",
-      },
-      {
-        id: "exploring",
-        label: "חקירה",
-        description: "מפה את בעלי העניין שלך",
-      },
-      {
-        id: "creating",
-        label: "יצירה",
-        description: "בנה תכנית השפעה",
-      },
-      {
-        id: "insight",
-        label: "תובנה",
-        description: "שתף את מה שלמדת",
-      },
-    ],
+    phases: PHASES,
   },
   {
     id: "a5",
     sessionNumber: 5,
-    title: "מטריצת עדיפויות",
-    subtitle: "האצלת סמכויות ועדיפויות",
+    title: "ניהול עצמי ועדיפויות",
+    subtitle: "מטריצת דחוף-חשוב ותכנון האצלה",
     missionBrief:
-      "האצלה היא לא פריקת עבודה — היא פיתוח הצוות. המטלה שלך: למפות את המשימות שלך ב-2×2 מטריצה לפי דחיפות וחשיבות ולהחליט מה להאציל ולמי.",
+      "מנהל/ת אפקטיבי/ת יודע/ת לנהל את עצמו/ה — לא רק את הצוות. המטלה שלך: למפות את המשימות שלך, לסווג אותן לפי דחיפות וחשיבות, ולזהות מה ניתן להאציל — ולמי — כדי לפנות זמן לעבודה האמיתית שלך כמנהל/ת.",
     accentColor: "orange",
-    achievementLabel: "מאציל בחוכמה",
+    achievementLabel: "מנהל עצמי",
     isUnlocked: false,
-    phases: [
-      {
-        id: "briefing",
-        label: "הכרת המשימה",
-        description: "קרא את המשימה והבן את המטרה",
-      },
-      {
-        id: "exploring",
-        label: "חקירה",
-        description: "מיין משימות לפי דחיפות וחשיבות",
-      },
-      {
-        id: "creating",
-        label: "יצירה",
-        description: "הגדר מה להאציל ולמי",
-      },
-      {
-        id: "insight",
-        label: "תובנה",
-        description: "שתף את מה שלמדת",
-      },
-    ],
+    phases: PHASES,
   },
   {
     id: "a6",
     sessionNumber: 6,
-    title: "מנהיגות שינוי",
-    subtitle: "הובלת שינוי בצוות",
+    title: "תפקיד המנהל בשינוי",
+    subtitle: "זיהוי שלב השינוי, אבחון התנגדות ותכנון שיחה",
     missionBrief:
-      "שינוי הוא הקבוע היחיד בניהול. המטלה שלך: לבנות תכנית לשינוי אחד שאתה מוביל עכשיו — מה השינוי, מי המושפעים, ומה האסטרטגיה שלך.",
+      "תפקיד המנהל/ת בשינוי הוא לא רק לנהל תהליכים — אלא לנהל אנשים בשינוי. המטלה שלך: לבחור עובד/ת או צוות שמושפעים משינוי, לאבחן את שלב ההתמודדות שלהם, ולתכנן שיחה שמתחילה בהכלה ומגיעה לפתרון.",
     accentColor: "indigo",
     achievementLabel: "מוביל שינוי",
     isUnlocked: false,
-    phases: [
-      {
-        id: "briefing",
-        label: "הכרת המשימה",
-        description: "קרא את המשימה והבן את המטרה",
-      },
-      {
-        id: "exploring",
-        label: "חקירה",
-        description: "תאר את השינוי ומי מושפע",
-      },
-      {
-        id: "creating",
-        label: "יצירה",
-        description: "בנה את תכנית השינוי שלך",
-      },
-      {
-        id: "insight",
-        label: "תובנה",
-        description: "שתף את מה שלמדת",
-      },
-    ],
+    phases: PHASES,
   },
 ];
 

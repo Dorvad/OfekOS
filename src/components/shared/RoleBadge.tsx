@@ -15,18 +15,6 @@ const roleStyles: Record<Role, RoleStyle> = {
     bg: "bg-indigo-50",
     activeBg: "bg-indigo-100 ring-1 ring-indigo-300",
   },
-  manager: {
-    label: "Manager",
-    color: "text-emerald-700",
-    bg: "bg-emerald-50",
-    activeBg: "bg-emerald-100 ring-1 ring-emerald-300",
-  },
-  facilitator: {
-    label: "Facilitator",
-    color: "text-amber-700",
-    bg: "bg-amber-50",
-    activeBg: "bg-amber-100 ring-1 ring-amber-300",
-  },
   admin: {
     label: "Admin",
     color: "text-slate-700",

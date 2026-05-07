@@ -9,6 +9,8 @@ import {
   setAssignmentPhase,
   getAssignmentInsight,
   setAssignmentInsight,
+  getAssignmentData,
+  setAssignmentData,
   markAssignmentAchieved,
   isAssignmentAchieved,
 } from "@/lib/assignment-storage";
@@ -16,7 +18,8 @@ import PhaseTracker from "./PhaseTracker";
 import AchievementBadge from "./AchievementBadge";
 import Card from "@/components/ui/Card";
 
-// Lazy-load each tool
+interface ToolProps { assignmentId: string; onComplete: () => void; }
+
 const NorthStarTool        = lazy(() => import("./tools/NorthStarTool"));
 const ConversationBuilderTool = lazy(() => import("./tools/ConversationBuilderTool"));
 const TeamMapTool          = lazy(() => import("./tools/TeamMapTool"));
@@ -24,7 +27,7 @@ const ManagingUpTool       = lazy(() => import("./tools/ManagingUpTool"));
 const PriorityMatrixTool   = lazy(() => import("./tools/PriorityMatrixTool"));
 const ChangeLeadershipTool = lazy(() => import("./tools/ChangeLeadershipTool"));
 
-const TOOL_MAP: Record<string, React.LazyExoticComponent<React.ComponentType<{ assignmentId: string }>>> = {
+const TOOL_MAP: Record<string, React.LazyExoticComponent<React.ComponentType<ToolProps>>> = {
   a1: NorthStarTool,
   a2: ConversationBuilderTool,
   a3: TeamMapTool,
@@ -33,16 +36,7 @@ const TOOL_MAP: Record<string, React.LazyExoticComponent<React.ComponentType<{ a
   a6: ChangeLeadershipTool,
 };
 
-const accentBg: Record<string, string> = {
-  amber:   "bg-amber-50 border-amber-200",
-  violet:  "bg-violet-50 border-violet-200",
-  teal:    "bg-teal-50 border-teal-200",
-  emerald: "bg-emerald-50 border-emerald-200",
-  orange:  "bg-orange-50 border-orange-200",
-  indigo:  "bg-indigo-50 border-indigo-200",
-};
-
-const accentButton: Record<string, string> = {
+const accentBtn: Record<string, string> = {
   amber:   "bg-amber-500 hover:bg-amber-600",
   violet:  "bg-violet-500 hover:bg-violet-600",
   teal:    "bg-teal-500 hover:bg-teal-600",
@@ -51,22 +45,31 @@ const accentButton: Record<string, string> = {
   indigo:  "bg-indigo-500 hover:bg-indigo-600",
 };
 
-interface AssignmentDetailClientProps {
-  assignment: Assignment;
-}
+const accentRing: Record<string, string> = {
+  amber:   "focus:ring-amber-400",
+  violet:  "focus:ring-violet-400",
+  teal:    "focus:ring-teal-400",
+  emerald: "focus:ring-emerald-400",
+  orange:  "focus:ring-orange-400",
+  indigo:  "focus:ring-indigo-400",
+};
+
+interface ClosingData { insight: string; action: string; question: string; }
+const EMPTY_CLOSING: ClosingData = { insight: "", action: "", question: "" };
+
+interface AssignmentDetailClientProps { assignment: Assignment; }
 
 export default function AssignmentDetailClient({ assignment }: AssignmentDetailClientProps) {
   const [phaseIndex, setPhaseIndex] = useState(0);
-  const [status, setStatus] = useState<AssignmentStatus>("available");
-  const [insight, setInsightText] = useState("");
+  const [status, setStatus]         = useState<AssignmentStatus>("available");
+  const [closing, setClosing]       = useState<ClosingData>(EMPTY_CLOSING);
   const [showAchievement, setShowAchievement] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
-  const [missionExpanded, setMissionExpanded] = useState(true);
+  const [hydrated, setHydrated]     = useState(false);
 
   useEffect(() => {
-    const savedStatus = getAssignmentStatus(assignment.id);
+    const savedStatus  = getAssignmentStatus(assignment.id);
     const savedPhaseId = getAssignmentPhase(assignment.id);
-    const savedInsight = getAssignmentInsight(assignment.id);
+    const savedClosing = getAssignmentData<ClosingData>(assignment.id + ":closing");
 
     const idx = savedPhaseId
       ? Math.max(0, assignment.phases.findIndex((p) => p.id === savedPhaseId))
@@ -74,14 +77,16 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
 
     setStatus(savedStatus === "locked" ? "available" : savedStatus);
     setPhaseIndex(idx);
-    setInsightText(savedInsight);
+    if (savedClosing) setClosing(savedClosing);
+    else {
+      const legacyInsight = getAssignmentInsight(assignment.id);
+      if (legacyInsight) setClosing({ insight: legacyInsight, action: "", question: "" });
+    }
 
-    // Mark as opened on first visit
     if (savedStatus === "available" || savedStatus === "locked") {
       setAssignmentStatus(assignment.id, "briefing");
       setStatus("briefing");
     }
-
     setHydrated(true);
   }, [assignment.id, assignment.phases]);
 
@@ -90,34 +95,27 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
     const nextPhase = assignment.phases[next];
     setPhaseIndex(next);
     setAssignmentPhase(assignment.id, nextPhase.id);
-
-    const newStatus = deriveStatus(nextPhase.id);
+    const newStatus = deriveStatus(next);
     setAssignmentStatus(assignment.id, newStatus);
     setStatus(newStatus);
   }
 
-  function retreatPhase() {
-    if (phaseIndex === 0) return;
-    const prev = phaseIndex - 1;
-    const prevPhase = assignment.phases[prev];
-    setPhaseIndex(prev);
-    setAssignmentPhase(assignment.id, prevPhase.id);
-    const newStatus = deriveStatus(prevPhase.id);
-    setAssignmentStatus(assignment.id, newStatus);
-    setStatus(newStatus);
-  }
-
-  function deriveStatus(phaseId: string): AssignmentStatus {
-    const idx = assignment.phases.findIndex((p) => p.id === phaseId);
+  function deriveStatus(idx: number): AssignmentStatus {
     if (idx === 0) return "briefing";
     if (idx === 1) return "exploring";
-    if (idx === 2) return "creating";
-    if (idx === 3) return "insight";
+    if (idx >= 2) return "insight";
     return "briefing";
   }
 
+  function updateClosing(field: keyof ClosingData, val: string) {
+    const next = { ...closing, [field]: val };
+    setClosing(next);
+    setAssignmentData(assignment.id + ":closing", next);
+    setAssignmentInsight(assignment.id, next.insight);
+  }
+
   function handleSubmit() {
-    setAssignmentInsight(assignment.id, insight);
+    setAssignmentInsight(assignment.id, closing.insight);
     setAssignmentStatus(assignment.id, "submitted");
     setStatus("submitted");
     if (!isAssignmentAchieved(assignment.id)) {
@@ -127,28 +125,32 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
   }
 
   const ToolComponent = TOOL_MAP[assignment.id];
-  const isLastPhase = phaseIndex === assignment.phases.length - 1;
-  const currentPhase = assignment.phases[phaseIndex];
+  const currentPhase  = assignment.phases[phaseIndex];
+  const btn           = accentBtn[assignment.accentColor] ?? accentBtn.indigo;
+  const ring          = accentRing[assignment.accentColor] ?? accentRing.indigo;
+  const closingReady  = closing.insight.trim().length > 0 && closing.action.trim().length > 0 && closing.question.trim().length > 0;
 
-  if (!hydrated) {
-    return <div className="h-64 bg-gray-100 rounded-2xl animate-pulse mt-6" />;
-  }
+  if (!hydrated) return <div className="h-64 bg-gray-100 rounded-2xl animate-pulse mt-6" />;
 
-  if (!assignment.isUnlocked) {
+  const adminOverride =
+    typeof window !== "undefined"
+      ? localStorage.getItem(`ofekos:admin:assignment:${assignment.id}:unlocked`)
+      : null;
+  const isUnlocked =
+    adminOverride !== null ? adminOverride === "true" : assignment.isUnlocked;
+
+  if (!isUnlocked) {
     return (
       <Card className="text-center py-12">
-        <div className="text-4xl mb-3">🔒</div>
+        <div className="text-3xl mb-3">🔒</div>
         <h2 className="font-bold text-gray-700 mb-1">מטלה נעולה</h2>
-        <p className="text-sm text-gray-400">
-          השלם את המטלה הקודמת כדי לפתוח מטלה זו.
-        </p>
+        <p className="text-sm text-gray-400">השלם את המטלה הקודמת כדי לפתוח מטלה זו.</p>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-5">
-      {/* Achievement overlay */}
+    <div className="space-y-4">
       {showAchievement && (
         <AchievementBadge
           label={assignment.achievementLabel}
@@ -158,118 +160,69 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
       )}
 
       {/* Phase tracker */}
-      <Card>
-        <PhaseTracker
-          phases={assignment.phases}
-          currentIndex={phaseIndex}
-          accentColor={assignment.accentColor}
-        />
+      <Card className="py-3">
+        <PhaseTracker phases={assignment.phases} currentIndex={phaseIndex} accentColor={assignment.accentColor} />
       </Card>
 
-      {/* Mission brief (collapsible) */}
-      <div className={`rounded-xl border p-4 ${accentBg[assignment.accentColor]}`}>
-        <button
-          onClick={() => setMissionExpanded((v) => !v)}
-          className="w-full flex items-center justify-between gap-2 text-right"
-        >
-          <span className="font-semibold text-gray-800 text-sm">המשימה שלך</span>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            className={`w-4 h-4 text-gray-500 transition-transform ${missionExpanded ? "rotate-180" : ""}`}
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </button>
-        {missionExpanded && (
-          <p className="text-sm text-gray-700 mt-3 leading-relaxed">
-            {assignment.missionBrief}
-          </p>
-        )}
-      </div>
-
-      {/* Phase content */}
+      {/* ── Briefing ── */}
       {currentPhase?.id === "briefing" && (
         <Card>
-          <h2 className="font-bold text-gray-900 mb-2">קריאת המשימה</h2>
-          <p className="text-sm text-gray-600 leading-relaxed mb-4">
-            {assignment.missionBrief}
-          </p>
-          <p className="text-xs text-gray-400 mb-4">
-            {currentPhase.description}
-          </p>
-          <button
-            onClick={advancePhase}
-            className={`w-full text-white font-semibold py-3 rounded-xl transition-colors ${accentButton[assignment.accentColor]}`}
-          >
-            הבנתי, נמשיך ←
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">המשימה שלך</p>
+          <p className="text-sm text-gray-700 leading-relaxed mb-5">{assignment.missionBrief}</p>
+          <button onClick={advancePhase} className={`w-full text-white font-semibold py-3 rounded-xl transition-colors ${btn}`}>
+            הבנתי — נתחיל ←
           </button>
         </Card>
       )}
 
-      {currentPhase?.id === "exploring" && ToolComponent && (
-        <Suspense fallback={<div className="h-48 bg-gray-100 rounded-2xl animate-pulse" />}>
-          <ToolComponent assignmentId={assignment.id} />
+      {/* ── Main tool ── */}
+      {currentPhase?.id === "main" && ToolComponent && (
+        <Suspense fallback={<div className="h-64 bg-gray-100 rounded-2xl animate-pulse" />}>
+          <ToolComponent assignmentId={assignment.id} onComplete={advancePhase} />
         </Suspense>
       )}
 
-      {currentPhase?.id === "creating" && ToolComponent && (
-        <Suspense fallback={<div className="h-48 bg-gray-100 rounded-2xl animate-pulse" />}>
-          <ToolComponent assignmentId={assignment.id} />
-        </Suspense>
-      )}
-
+      {/* ── Insight / closing ── */}
       {currentPhase?.id === "insight" && (
         <Card>
-          <h2 className="font-bold text-gray-900 mb-1">תובנה אישית</h2>
-          <p className="text-sm text-gray-500 mb-4">
-            מה הדבר החשוב ביותר שלמדת ממטלה זו?
-          </p>
-          <textarea
-            value={insight}
-            onChange={(e) => {
-              setInsightText(e.target.value);
-              setAssignmentInsight(assignment.id, e.target.value);
-            }}
-            placeholder="כתוב כאן את התובנה שלך..."
-            className="w-full min-h-[140px] p-3 rounded-xl border border-gray-200 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            dir="rtl"
-          />
-          {insight.trim().length > 0 && status !== "submitted" && (
+          <h2 className="font-bold text-gray-900 mb-1">סיכום המטלה</h2>
+          <p className="text-xs text-gray-400 mb-5">מלא את שלושת השדות — זה מה שתביא למפגש הבא</p>
+
+          {[
+            { key: "insight" as const, label: "💡 תובנה", placeholder: "מה הדבר החשוב ביותר שלמדת ממטלה זו?" },
+            { key: "action"  as const, label: "✅ פעולה",  placeholder: "פעולה אחת קונקרטית שתיישם בשבועיים הקרובים..." },
+            { key: "question" as const, label: "❓ שאלה",   placeholder: "שאלה אחת שתרצה להביא למפגש הבא..." },
+          ].map(({ key, label, placeholder }) => (
+            <div key={key} className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
+              <textarea
+                value={closing[key]}
+                onChange={(e) => updateClosing(key, e.target.value)}
+                placeholder={placeholder}
+                rows={3}
+                className={`w-full p-3 rounded-xl border border-gray-200 text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 ${ring}`}
+                dir="rtl"
+              />
+            </div>
+          ))}
+
+          {status !== "submitted" && (
             <button
               onClick={handleSubmit}
-              className={`w-full mt-4 text-white font-semibold py-3 rounded-xl transition-colors ${accentButton[assignment.accentColor]}`}
+              disabled={!closingReady}
+              className={`w-full text-white font-semibold py-3 rounded-xl transition-colors ${
+                closingReady ? btn : "bg-gray-200 text-gray-400 cursor-not-allowed"
+              }`}
             >
-              שלח ←
+              {closingReady ? "הגש מטלה ←" : "מלא את כל השדות כדי להגיש"}
             </button>
           )}
           {status === "submitted" && (
-            <div className="mt-4 p-3 bg-emerald-50 rounded-xl text-sm text-emerald-700 font-medium text-center">
-              ✓ הוגש בהצלחה
+            <div className="p-3 bg-emerald-50 rounded-xl text-sm text-emerald-700 font-medium text-center">
+              ✓ המטלה הוגשה בהצלחה
             </div>
           )}
         </Card>
-      )}
-
-      {/* Phase navigation */}
-      {currentPhase?.id !== "briefing" && currentPhase?.id !== "insight" && (
-        <div className="flex items-center justify-between gap-4">
-          <button
-            onClick={retreatPhase}
-            className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
-          >
-            → חזרה
-          </button>
-          <button
-            onClick={advancePhase}
-            disabled={isLastPhase}
-            className={`text-sm font-semibold flex items-center gap-1 ${isLastPhase ? "text-gray-300 cursor-not-allowed" : "text-indigo-600 hover:text-indigo-700"}`}
-          >
-            הבא ←
-          </button>
-        </div>
       )}
     </div>
   );

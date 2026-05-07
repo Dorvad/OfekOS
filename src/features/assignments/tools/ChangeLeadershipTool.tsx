@@ -1,246 +1,645 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { getAssignmentData, setAssignmentData } from "@/lib/assignment-storage";
+import { useToolData } from "@/features/assignments/useToolData";
+import ToolStepper from "@/features/assignments/ToolStepper";
+import Card from "@/components/ui/Card";
 
-type ChangeStage = "denial" | "resistance" | "learning" | "acceptance" | null;
-type ResistanceType = "emotional" | "rational" | "behavioral";
-
-interface ChangeLeadershipData {
-  whatChange: string;
-  affected: string;
-  practicalImpact: string;
-  stage: ChangeStage;
-  resistanceTypes: ResistanceType[];
-  inclusion: string;
-  differentiation: string;
-  resolution: string;
-  inclusionDone: boolean;
-  differentiationDone: boolean;
+/* ── Types ── */
+interface ChangeData {
+  step: number;
+  audienceType: "employee" | "team" | "interface" | "other" | "";
+  audienceDescription: string;
+  changeDescription: string;
+  changeImpact: string;
+  changeStage: "denial" | "resistance" | "learning" | "acceptance" | "";
+  resistanceTypes: string[];
+  fearsToLose: string;
+  missingInfo: string;
+  hardAction: string;
+  containmentQuestion: string;
+  whatToValidate: string;
+  whatCantChange: string;
+  whatCanChange: string;
+  nextStep: string;
+  supportIllGive: string;
+  checkProgress: string;
+  conversationDone: boolean;
+  response: string;
+  reflection: string;
+  selfCheck: string;
 }
 
-const EMPTY: ChangeLeadershipData = {
-  whatChange: "", affected: "", practicalImpact: "",
-  stage: null, resistanceTypes: [],
-  inclusion: "", differentiation: "", resolution: "",
-  inclusionDone: false, differentiationDone: false,
+/* ── Constants ── */
+const DEFAULT: ChangeData = {
+  step: 0,
+  audienceType: "",
+  audienceDescription: "",
+  changeDescription: "",
+  changeImpact: "",
+  changeStage: "",
+  resistanceTypes: [],
+  fearsToLose: "",
+  missingInfo: "",
+  hardAction: "",
+  containmentQuestion: "",
+  whatToValidate: "",
+  whatCantChange: "",
+  whatCanChange: "",
+  nextStep: "",
+  supportIllGive: "",
+  checkProgress: "",
+  conversationDone: false,
+  response: "",
+  reflection: "",
+  selfCheck: "",
 };
 
-const STAGES: { key: ChangeStage; label: string; desc: string }[] = [
-  { key: "denial",     label: "הכחשה",    desc: "לא מאמינים שהשינוי אמיתי או נחוץ" },
-  { key: "resistance", label: "התנגדות",  desc: "מאמינים בשינוי אך מתנגדים לו" },
-  { key: "learning",   label: "למידה",    desc: "מתחילים להתנסות עם השינוי" },
-  { key: "acceptance", label: "קבלה",     desc: "מאמצים את השינוי לחלוטין" },
+const STEPS_LABELS = ["מצב השינוי", "אבחון", "תכנון השיחה", "ביצוע ורפלקציה"];
+
+interface AudienceChip {
+  key: "employee" | "team" | "interface" | "other";
+  label: string;
+}
+
+const AUDIENCE_CHIPS: AudienceChip[] = [
+  { key: "employee", label: "עובד/ת ספציפי/ת" },
+  { key: "team",     label: "הצוות כולו" },
+  { key: "interface", label: "קבוצת ממשק" },
+  { key: "other",    label: "אחר" },
 ];
 
-export default function ChangeLeadershipTool({ assignmentId }: { assignmentId: string }) {
-  const [data, setData] = useState<ChangeLeadershipData>(EMPTY);
-  const [saved, setSaved] = useState(false);
-  const [incError, setIncError] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+interface StageDef {
+  key: "denial" | "resistance" | "learning" | "acceptance";
+  label: string;
+  icon: string;
+  desc: string;
+}
 
-  useEffect(() => {
-    const stored = getAssignmentData<ChangeLeadershipData>(assignmentId);
-    if (stored) setData(stored as ChangeLeadershipData);
-  }, [assignmentId]);
+const STAGES: StageDef[] = [
+  {
+    key: "denial",
+    label: "הכחשה",
+    icon: "🙈",
+    desc: "מתעלם/ת, ממשיך/ה כרגיל, 'זה לא יקרה'",
+  },
+  {
+    key: "resistance",
+    label: "התנגדות",
+    icon: "😤",
+    desc: "מתנגד/ת גלוי/ה, ציני/ת, טוען/ת שזה שגוי",
+  },
+  {
+    key: "learning",
+    label: "למידה",
+    icon: "🤔",
+    desc: "מתחיל/ה לשאול שאלות, מנסה להבין, לא בטוח/ה",
+  },
+  {
+    key: "acceptance",
+    label: "קבלה",
+    icon: "✅",
+    desc: "לוקח/ת אחריות, מסתגל/ת, מוביל/ת",
+  },
+];
 
-  function persist(next: ChangeLeadershipData) {
-    setData(next);
-    setSaved(false);
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      setAssignmentData(assignmentId, next);
-      setSaved(true);
-    }, 800);
-  }
+const RESISTANCE_TYPE_CHIPS = ["רגשית", "רציונלית", "התנהגותית"];
 
-  function toggleResistance(type: ResistanceType) {
-    const has = data.resistanceTypes.includes(type);
-    persist({
-      ...data,
-      resistanceTypes: has
-        ? data.resistanceTypes.filter((r) => r !== type)
-        : [...data.resistanceTypes, type],
-    });
-  }
+/* ── Shared style strings ── */
+const TA =
+  "w-full p-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400";
+const TA_TEAL =
+  "w-full p-3 rounded-xl border border-teal-200 bg-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-400";
+const TA_AMBER =
+  "w-full p-3 rounded-xl border border-amber-200 bg-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-400";
+const TA_INDIGO =
+  "w-full p-3 rounded-xl border border-indigo-200 bg-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400";
+const INPUT_INDIGO =
+  "w-full px-3 py-2 rounded-xl border border-indigo-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400";
 
-  function handleResolutionFocus() {
-    if (!data.inclusionDone) {
-      setIncError(true);
-      setTimeout(() => setIncError(false), 3000);
-    }
-  }
+/* ── Props ── */
+interface ToolProps {
+  assignmentId: string;
+  onComplete: () => void;
+}
 
-  const isReady =
-    data.whatChange.trim().length > 0 &&
-    data.inclusion.trim().length > 0 &&
-    data.inclusionDone;
-
+/* ── Checkbox component ── */
+function Checkbox({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  label: string;
+}) {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-bold text-gray-900">מנהיגות שינוי</h2>
-        <span className={`text-xs ${saved ? "text-emerald-600" : "text-gray-400"}`}>
-          {saved ? "נשמר ✓" : ""}
-        </span>
+    <button
+      type="button"
+      onClick={onChange}
+      className={`flex items-center gap-3 w-full text-right px-4 py-3 rounded-xl border-2 transition-colors ${
+        checked ? "border-emerald-400 bg-emerald-50" : "border-gray-200 bg-white"
+      }`}
+    >
+      <div
+        className={`w-5 h-5 rounded flex items-center justify-center border-2 shrink-0 transition-colors ${
+          checked ? "border-emerald-500 bg-emerald-500" : "border-gray-300 bg-white"
+        }`}
+      >
+        {checked && (
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} className="w-3 h-3">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        )}
       </div>
+      <span className="text-sm font-medium text-gray-800">{label}</span>
+    </button>
+  );
+}
 
-      {/* Change description */}
-      <div className="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-indigo-800">תאר את השינוי</h3>
+export default function ChangeLeadershipTool({ assignmentId, onComplete }: ToolProps) {
+  const { data, update, saved } = useToolData<ChangeData>(assignmentId, DEFAULT);
+
+  const step = data.step;
+
+  function goTo(s: number) {
+    update("step", s);
+  }
+
+  function toggleResistanceType(chip: string) {
+    const arr = data.resistanceTypes;
+    update(
+      "resistanceTypes",
+      arr.includes(chip) ? arr.filter((c) => c !== chip) : [...arr, chip]
+    );
+  }
+
+  /* ────────────── STEP 0: מצב השינוי ────────────── */
+  function renderStep0() {
+    return (
+      <div className="space-y-4">
+        <p className="text-xs text-gray-500 bg-indigo-50 rounded-xl px-3 py-2">
+          בחר/י עובד/ת או קבוצה שמושפעת משינוי שאתה/ת מוביל/ה
+        </p>
+
+        {/* Audience type chips */}
         <div>
-          <label className="text-xs text-gray-600 block mb-1">מה השינוי?</label>
-          <textarea
-            value={data.whatChange}
-            onChange={(e) => persist({ ...data, whatChange: e.target.value })}
-            placeholder="תאר את השינוי בקצרה..."
-            className="w-full min-h-[72px] rounded-lg border border-indigo-200 bg-white p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          <label className="block text-xs font-semibold text-gray-700 mb-2">
+            מי מושפע מהשינוי?
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {AUDIENCE_CHIPS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() =>
+                  update("audienceType", data.audienceType === key ? "" : key)
+                }
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-colors ${
+                  data.audienceType === key
+                    ? "bg-indigo-500 text-white border-indigo-500"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Audience description */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            תאר/י את האדם / הקבוצה
+          </label>
+          <p className="text-xs text-gray-400 mb-1.5">השתמש/י בראשי תיבות</p>
+          <input
+            type="text"
+            value={data.audienceDescription}
+            onChange={(e) => update("audienceDescription", e.target.value)}
             dir="rtl"
+            placeholder="לדוגמה: א.כ., מוביל צוות פיתוח..."
+            className={INPUT_INDIGO}
           />
         </div>
+
+        {/* Change description */}
         <div>
-          <label className="text-xs text-gray-600 block mb-1">מי מושפע ואיך?</label>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            מה השינוי?
+          </label>
           <textarea
-            value={data.affected}
-            onChange={(e) => persist({ ...data, affected: e.target.value })}
-            placeholder="רשום את מי שיושפע ומה ההשפעה..."
-            className="w-full min-h-[72px] rounded-lg border border-indigo-200 bg-white p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            value={data.changeDescription}
+            onChange={(e) => update("changeDescription", e.target.value)}
+            rows={3}
             dir="rtl"
+            className={TA}
+            placeholder="תאר/י בקצרה את השינוי שמתרחש"
           />
         </div>
-      </div>
 
-      {/* Stage diagnosis */}
-      {data.whatChange.trim().length > 0 && (
+        {/* Change impact */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">אבחן את שלב השינוי</h3>
-          <div className="grid grid-cols-2 gap-2">
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            איך השינוי משפיע עליהם בפועל?
+          </label>
+          <textarea
+            value={data.changeImpact}
+            onChange={(e) => update("changeImpact", e.target.value)}
+            rows={3}
+            dir="rtl"
+            className={TA}
+            placeholder="מה משתנה עבורם ביום-יום?"
+          />
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={() => goTo(1)}
+            className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+          >
+            המשך ←
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ────────────── STEP 1: אבחון ────────────── */
+  function renderStep1() {
+    return (
+      <div className="space-y-5">
+        <p className="text-xs text-gray-500 bg-indigo-50 rounded-xl px-3 py-2">
+          אבחן/י את שלב השינוי וסוג ההתנגדות
+        </p>
+
+        {/* Section A: שלב השינוי */}
+        <div>
+          <h3 className="text-sm font-bold text-gray-800 mb-2">שלב השינוי</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {STAGES.map((s) => (
               <button
                 key={s.key}
-                onClick={() => persist({ ...data, stage: s.key })}
-                className={`rounded-xl border-2 p-3 text-right transition-all ${
-                  data.stage === s.key
-                    ? "border-indigo-500 bg-indigo-100"
+                type="button"
+                onClick={() =>
+                  update("changeStage", data.changeStage === s.key ? "" : s.key)
+                }
+                className={`text-right p-3 rounded-xl border-2 transition-all ${
+                  data.changeStage === s.key
+                    ? "border-indigo-500 bg-indigo-50"
                     : "border-gray-200 bg-white hover:border-indigo-200"
                 }`}
               >
-                <p className="font-semibold text-sm text-gray-900">{s.label}</p>
+                <p className="font-bold text-sm text-gray-900">
+                  {s.icon} {s.label}
+                </p>
                 <p className="text-xs text-gray-500 mt-0.5">{s.desc}</p>
               </button>
             ))}
           </div>
         </div>
-      )}
 
-      {/* Resistance type */}
-      {data.stage && (
+        {/* Section B: סוג ההתנגדות */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">סוג ההתנגדות</h3>
-          <div className="flex gap-2 flex-wrap">
-            {(["emotional", "rational", "behavioral"] as ResistanceType[]).map((t) => {
-              const labels = { emotional: "רגשי", rational: "רציונלי", behavioral: "התנהגותי" };
-              const active = data.resistanceTypes.includes(t);
-              return (
-                <button
-                  key={t}
-                  onClick={() => toggleResistance(t)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-all ${
-                    active ? "border-indigo-500 bg-indigo-100 text-indigo-700" : "border-gray-200 text-gray-500"
-                  }`}
-                >
-                  {labels[t]}
-                </button>
-              );
-            })}
+          <h3 className="text-sm font-bold text-gray-800 mb-2">סוג ההתנגדות</h3>
+          <div className="flex flex-wrap gap-2">
+            {RESISTANCE_TYPE_CHIPS.map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => toggleResistanceType(chip)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border-2 transition-colors ${
+                  data.resistanceTypes.includes(chip)
+                    ? "bg-indigo-500 text-white border-indigo-500"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300"
+                }`}
+              >
+                {chip}
+              </button>
+            ))}
           </div>
         </div>
-      )}
 
-      {/* 3-phase conversation builder */}
-      {data.stage && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700">שיחת השינוי — 3 שלבים</h3>
+        {/* Section C: אבחון עמוק */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-bold text-gray-800">אבחון מעמיק</h3>
 
-          {/* Inclusion */}
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${data.inclusionDone ? "bg-emerald-500 text-white" : "bg-indigo-500 text-white"}`}>1</div>
-                <span className="font-semibold text-sm">הכלה</span>
-              </div>
-              {!data.inclusionDone && data.inclusion.trim().length > 0 && (
-                <button
-                  onClick={() => persist({ ...data, inclusionDone: true })}
-                  className="text-xs bg-emerald-500 text-white px-3 py-1 rounded-full"
-                >
-                  סיימתי
-                </button>
-              )}
-            </div>
-            <p className="text-xs text-gray-400 mb-2">הראה שאתה שמע ומבין את הצד האחר לפני שמציע פתרון</p>
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              מה הוא/היא חושש/ת לאבד?
+            </label>
             <textarea
-              value={data.inclusion}
-              onChange={(e) => persist({ ...data, inclusion: e.target.value, inclusionDone: false })}
-              placeholder="מה תאמר כדי להכיל את הצד האחר?"
-              className="w-full min-h-[80px] rounded-lg border border-gray-200 bg-gray-50 p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              value={data.fearsToLose}
+              onChange={(e) => update("fearsToLose", e.target.value)}
+              rows={2}
               dir="rtl"
+              className={TA}
+              placeholder="ביטחון תעסוקתי, מעמד, שגרה, שליטה..."
             />
           </div>
 
-          {/* Differentiation */}
-          <div className={`rounded-xl border p-4 ${!data.inclusionDone ? "opacity-50 pointer-events-none" : "border-gray-200 bg-white"}`}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${data.differentiationDone ? "bg-emerald-500 text-white" : "bg-indigo-400 text-white"}`}>2</div>
-                <span className="font-semibold text-sm">בידול</span>
-              </div>
-              {data.inclusionDone && !data.differentiationDone && data.differentiation.trim().length > 0 && (
-                <button
-                  onClick={() => persist({ ...data, differentiationDone: true })}
-                  className="text-xs bg-emerald-500 text-white px-3 py-1 rounded-full"
-                >
-                  סיימתי
-                </button>
-              )}
-            </div>
-            <p className="text-xs text-gray-400 mb-2">הבדל בין מה שהצד האחר חושב ובין מה שאתה רואה</p>
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              איזה מידע חסר לו/ה?
+            </label>
             <textarea
-              value={data.differentiation}
-              onChange={(e) => persist({ ...data, differentiation: e.target.value, differentiationDone: false })}
-              placeholder="מה תאמר כדי לחדד את ההבדל?"
-              className="w-full min-h-[80px] rounded-lg border border-gray-200 bg-gray-50 p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              value={data.missingInfo}
+              onChange={(e) => update("missingInfo", e.target.value)}
+              rows={2}
               dir="rtl"
+              className={TA}
+              placeholder="כתוב/י כאן..."
             />
           </div>
 
-          {/* Resolution */}
-          <div className={`rounded-xl border p-4 ${!data.differentiationDone ? "opacity-50 pointer-events-none" : "border-gray-200 bg-white"}`} onFocus={handleResolutionFocus}>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-5 h-5 rounded-full bg-indigo-300 text-white flex items-center justify-center text-xs font-bold">3</div>
-              <span className="font-semibold text-sm">פתרון</span>
-            </div>
-            {incError && (
-              <p className="text-xs text-red-500 mb-2">⚠️ לא ניתן לדלג על שלב ההכלה</p>
-            )}
-            <p className="text-xs text-gray-400 mb-2">הצע את הדרך קדימה</p>
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              מה קשה לו/ה לעשות בפועל?
+            </label>
             <textarea
-              value={data.resolution}
-              onChange={(e) => persist({ ...data, resolution: e.target.value })}
-              placeholder="מה הפתרון שתציע?"
-              className="w-full min-h-[80px] rounded-lg border border-gray-200 bg-gray-50 p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              value={data.hardAction}
+              onChange={(e) => update("hardAction", e.target.value)}
+              rows={2}
               dir="rtl"
-              disabled={!data.differentiationDone}
+              className={TA}
+              placeholder="כתוב/י כאן..."
             />
           </div>
         </div>
-      )}
 
-      {isReady && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700 font-medium text-center">
-          ✓ תכנית השינוי בנויה — עבור לשלב הבא
+        <div className="flex justify-between">
+          <button
+            onClick={() => goTo(0)}
+            className="text-gray-500 hover:text-gray-700 font-medium text-sm px-4 py-2.5 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors"
+          >
+            → חזרה
+          </button>
+          <button
+            onClick={() => goTo(2)}
+            className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+          >
+            המשך ←
+          </button>
         </div>
-      )}
-    </div>
+      </div>
+    );
+  }
+
+  /* ────────────── STEP 2: תכנון השיחה ────────────── */
+  function renderStep2() {
+    return (
+      <div className="space-y-5">
+        <p className="text-xs text-gray-500 bg-indigo-50 rounded-xl px-3 py-2">
+          תכנן/י שיחה לפי שלושה שלבים — אל תדלג/י על הכלה
+        </p>
+
+        {/* Section 1: הכלה */}
+        <div className="rounded-xl border-2 border-teal-200 bg-teal-50 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-teal-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
+              1
+            </span>
+            <h3 className="text-sm font-bold text-teal-800">שלב 1: הכלה 🫂</h3>
+          </div>
+          <p className="text-xs text-teal-700 bg-teal-100 rounded-lg px-2 py-1.5">
+            💡 פתח/י בהכרה ברגשות לפני שמציגים תכנית
+          </p>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              השאלה הפתוחה שלי להכלה
+            </label>
+            <textarea
+              value={data.containmentQuestion}
+              onChange={(e) => update("containmentQuestion", e.target.value)}
+              rows={3}
+              dir="rtl"
+              className={TA_TEAL}
+              placeholder="שאלה שמזמינה לשתף בלי שיפוט (לא 'למה?')"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              מה אוכל להבין ולקבל?
+            </label>
+            <textarea
+              value={data.whatToValidate}
+              onChange={(e) => update("whatToValidate", e.target.value)}
+              rows={3}
+              dir="rtl"
+              className={TA_TEAL}
+              placeholder="מה בהתנגדות שלהם מובן לי, גם אם אני לא מסכים/ה?"
+            />
+          </div>
+        </div>
+
+        {/* Section 2: הבדלה */}
+        <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
+              2
+            </span>
+            <h3 className="text-sm font-bold text-amber-800">שלב 2: הבדלה 🔀</h3>
+          </div>
+          <p className="text-xs text-amber-700 bg-amber-100 rounded-lg px-2 py-1.5">
+            💡 הבדל בין מה שניתן לשינוי לבין מה שלא. היה/י ברור/ה.
+          </p>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              מה לא ניתן לשינוי בשינוי הזה?
+            </label>
+            <textarea
+              value={data.whatCantChange}
+              onChange={(e) => update("whatCantChange", e.target.value)}
+              rows={3}
+              dir="rtl"
+              className={TA_AMBER}
+              placeholder="מה קבוע ולא ניתן למשא ומתן?"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              מה כן ניתן להשפיע עליו?
+            </label>
+            <textarea
+              value={data.whatCanChange}
+              onChange={(e) => update("whatCanChange", e.target.value)}
+              rows={3}
+              dir="rtl"
+              className={TA_AMBER}
+              placeholder="איפה יש להם מרחב בחירה או השפעה?"
+            />
+          </div>
+        </div>
+
+        {/* Section 3: פתרון */}
+        <div className="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold shrink-0">
+              3
+            </span>
+            <h3 className="text-sm font-bold text-indigo-800">שלב 3: פתרון 🗺</h3>
+          </div>
+          <p className="text-xs text-indigo-700 bg-indigo-100 rounded-lg px-2 py-1.5">
+            💡 הצג/י צעד קטן ואפשרי — לא את כל התמונה
+          </p>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              הצעד הבא האפשרי
+            </label>
+            <textarea
+              value={data.nextStep}
+              onChange={(e) => update("nextStep", e.target.value)}
+              rows={3}
+              dir="rtl"
+              className={TA_INDIGO}
+              placeholder="פעולה קטנה וקונקרטית שהם יכולים לעשות"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              איזו תמיכה אתן?
+            </label>
+            <textarea
+              value={data.supportIllGive}
+              onChange={(e) => update("supportIllGive", e.target.value)}
+              rows={2}
+              dir="rtl"
+              className={TA_INDIGO}
+              placeholder="כתוב/י כאן..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              איך נבדוק התקדמות?
+            </label>
+            <input
+              type="text"
+              value={data.checkProgress}
+              onChange={(e) => update("checkProgress", e.target.value)}
+              dir="rtl"
+              placeholder="תאריך / תדירות / מדד..."
+              className={INPUT_INDIGO}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-between">
+          <button
+            onClick={() => goTo(1)}
+            className="text-gray-500 hover:text-gray-700 font-medium text-sm px-4 py-2.5 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors"
+          >
+            → חזרה
+          </button>
+          <button
+            onClick={() => goTo(3)}
+            className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+          >
+            המשך ←
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ────────────── STEP 3: ביצוע ורפלקציה ────────────── */
+  function renderStep3() {
+    return (
+      <div className="space-y-4">
+        <p className="text-xs text-gray-500 bg-indigo-50 rounded-xl px-3 py-2">
+          לאחר שקיימת את השיחה, ענה/י על השאלות הבאות
+        </p>
+
+        {/* Conversation done checkbox */}
+        <Checkbox
+          checked={data.conversationDone}
+          onChange={() => update("conversationDone", !data.conversationDone)}
+          label="קיימתי את השיחה"
+        />
+
+        {/* Response */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            איך הגיבו?
+          </label>
+          <textarea
+            value={data.response}
+            onChange={(e) => update("response", e.target.value)}
+            rows={3}
+            dir="rtl"
+            className={TA}
+            placeholder="כתוב/י כאן..."
+          />
+        </div>
+
+        {/* Reflection */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            מה עבד? מה הייתי עושה אחרת?
+          </label>
+          <textarea
+            value={data.reflection}
+            onChange={(e) => update("reflection", e.target.value)}
+            rows={3}
+            dir="rtl"
+            className={TA}
+            placeholder="כתוב/י כאן..."
+          />
+        </div>
+
+        {/* Self-check */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">
+            האם דילגתי לפתרון לפני שהכלתי? מה קרה?
+          </label>
+          <textarea
+            value={data.selfCheck}
+            onChange={(e) => update("selfCheck", e.target.value)}
+            rows={3}
+            dir="rtl"
+            className={TA}
+            placeholder="רפלקציה עצמית כנה — כתוב/י כאן..."
+          />
+        </div>
+
+        <div className="flex justify-between">
+          <button
+            onClick={() => goTo(2)}
+            className="text-gray-500 hover:text-gray-700 font-medium text-sm px-4 py-2.5 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors"
+          >
+            → חזרה
+          </button>
+          <button
+            onClick={onComplete}
+            className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
+          >
+            סיימתי ←
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ────────────── ROOT RENDER ────────────── */
+  return (
+    <Card>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-bold text-gray-900 text-base">תפקיד המנהל בשינוי</h2>
+        {saved && <span className="text-xs text-emerald-600">נשמר ✓</span>}
+      </div>
+
+      <ToolStepper steps={STEPS_LABELS} current={step} accent="indigo" />
+
+      {step === 0 && renderStep0()}
+      {step === 1 && renderStep1()}
+      {step === 2 && renderStep2()}
+      {step === 3 && renderStep3()}
+    </Card>
   );
 }

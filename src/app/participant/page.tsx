@@ -1,102 +1,126 @@
 import Link from "next/link";
-import { MOCK_USER, MOCK_PROGRAM, MOCK_ASSIGNMENTS } from "@/lib/mock-data";
+import { MOCK_USER, MOCK_PROGRAM, MOCK_ASSIGNMENTS, MOCK_SESSIONS } from "@/lib/mock-data";
 import Card from "@/components/ui/Card";
 import ProgramAxisClient from "@/features/assignments/ProgramAxisClient";
+import PrepareReminderClient from "@/features/assignments/PrepareReminderClient";
 
-const accentCard: Record<string, string> = {
-  amber:   "border-amber-300 bg-amber-50",
-  violet:  "border-violet-300 bg-violet-50",
-  teal:    "border-teal-300 bg-teal-50",
-  emerald: "border-emerald-300 bg-emerald-50",
-  orange:  "border-orange-300 bg-orange-50",
-  indigo:  "border-indigo-300 bg-indigo-50",
+const SESSION_TITLES_HE: Record<string, string> = {
+  s1: "יסודות הניהול",
+  s2: "מתן משוב אפקטיבי",
+  s3: "שיחות קשות",
+  s4: "האצלה והסמכה",
+  s5: "חשיבה אסטרטגית",
+  s6: "מנהיגות שינוי",
 };
 
-const accentButton: Record<string, string> = {
-  amber:   "bg-amber-500 hover:bg-amber-600",
-  violet:  "bg-violet-500 hover:bg-violet-600",
-  teal:    "bg-teal-500 hover:bg-teal-600",
-  emerald: "bg-emerald-500 hover:bg-emerald-600",
-  orange:  "bg-orange-500 hover:bg-orange-600",
-  indigo:  "bg-indigo-500 hover:bg-indigo-600",
-};
+function formatDateHe(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("he-IL", { day: "numeric", month: "long" });
+  } catch {
+    return dateStr;
+  }
+}
 
-const accentLabel: Record<string, string> = {
-  amber:   "text-amber-700",
-  violet:  "text-violet-700",
-  teal:    "text-teal-700",
-  emerald: "text-emerald-700",
-  orange:  "text-orange-700",
-  indigo:  "text-indigo-700",
+const accentHero: Record<string, string> = {
+  amber:   "from-amber-400 to-amber-500",
+  violet:  "from-violet-500 to-violet-600",
+  teal:    "from-teal-400 to-teal-500",
+  emerald: "from-emerald-400 to-emerald-500",
+  orange:  "from-orange-400 to-orange-500",
+  indigo:  "from-indigo-500 to-indigo-600",
 };
 
 export default function ParticipantDashboard() {
   const currentAssignment = MOCK_ASSIGNMENTS.find((a) => a.isUnlocked);
   const unlockedCount = MOCK_ASSIGNMENTS.filter((a) => a.isUnlocked).length;
+  const firstName = MOCK_USER.name.split(" ")[0];
+
+  const nextSession = MOCK_SESSIONS.find((s) => s.status === "upcoming" || s.status === "active");
+  const nextSessionNumber = nextSession ? parseInt(nextSession.id.replace("s", ""), 10) : null;
+  const nextSessionTitleHe = nextSession ? (SESSION_TITLES_HE[nextSession.id] ?? nextSession.title) : null;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+
       {/* Welcome */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          שלום, {MOCK_USER.name.split(" ")[0]} 👋
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">{MOCK_PROGRAM.name}</p>
+      <div>
+        <h1 className="text-xl font-bold text-gray-900">שלום, {firstName}</h1>
+        <p className="text-sm text-gray-400 mt-0.5">{MOCK_PROGRAM.name.split("—")[0].trim()}</p>
       </div>
 
-      {/* Current assignment card */}
+      {/* Current assignment — hero card */}
       {currentAssignment && (
-        <div className={`rounded-2xl border-2 p-5 mb-5 ${accentCard[currentAssignment.accentColor]}`}>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${accentLabel[currentAssignment.accentColor]}`}>
-                המטלה הנוכחית — מפגש {currentAssignment.sessionNumber}
-              </p>
-              <h2 className="font-bold text-gray-900 text-lg leading-snug">
-                {currentAssignment.title}
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">{currentAssignment.subtitle}</p>
+        <Link href={`/participant/assignments/${currentAssignment.id}`} className="block group">
+          <div className={`rounded-2xl bg-gradient-to-br ${accentHero[currentAssignment.accentColor]} p-5 shadow-md group-hover:shadow-lg transition-shadow`}>
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="flex-1 min-w-0">
+                <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-2 bg-white/20 text-white">
+                  מפגש {currentAssignment.sessionNumber} · מטלה פעילה
+                </span>
+                <h2 className="text-white font-bold text-xl leading-snug">
+                  {currentAssignment.title}
+                </h2>
+                <p className="text-white/80 text-sm mt-1">{currentAssignment.subtitle}</p>
+              </div>
+              <div className="shrink-0 mt-1 px-3 py-2 rounded-xl text-sm font-semibold bg-white/20 group-hover:bg-white/30 text-white transition-colors">
+                פתח ←
+              </div>
             </div>
-            <Link
-              href={`/participant/assignments/${currentAssignment.id}`}
-              className={`shrink-0 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors ${accentButton[currentAssignment.accentColor]}`}
-            >
-              פתח ←
-            </Link>
+            <p className="text-white/70 text-xs leading-relaxed line-clamp-2">
+              {currentAssignment.missionBrief}
+            </p>
           </div>
-        </div>
+        </Link>
       )}
 
-      {/* Program axis */}
-      <Card className="mb-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-700">המסע שלך</h2>
-          <span className="text-xs text-gray-400">
-            {unlockedCount} מתוך {MOCK_ASSIGNMENTS.length} מטלות זמינות
+      {/* Program journey */}
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-gray-800">המסע שלך</h2>
+          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+            {unlockedCount}/{MOCK_ASSIGNMENTS.length} פתוחות
           </span>
         </div>
         <ProgramAxisClient assignments={MOCK_ASSIGNMENTS} />
+        <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+          <span className="text-xs text-gray-400">6 מטלות · 3 שלבים כל אחת</span>
+          <Link
+            href="/participant/assignments"
+            className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+          >
+            כל המטלות ←
+          </Link>
+        </div>
       </Card>
 
-      {/* Quick access */}
-      <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
-        גישה מהירה
-      </h2>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { href: "/participant/assignments", label: "מטלות",    desc: `${MOCK_ASSIGNMENTS.length} מטלות` },
-          { href: "/participant/insights",    label: "תובנות",   desc: "האוסף שלי" },
-          { href: "/participant/prepare",     label: "הכנה",     desc: "למפגש הבא" },
-          { href: "/participant/resources",   label: "משאבים",   desc: "קבצים ותבניות" },
-        ].map((item) => (
-          <Link key={item.href} href={item.href}>
-            <Card className="h-full hover:shadow-md transition-shadow cursor-pointer">
-              <div className="font-semibold text-sm text-gray-900">{item.label}</div>
-              <div className="text-xs text-gray-400 mt-0.5">{item.desc}</div>
-            </Card>
-          </Link>
-        ))}
+      {/* Prepare reminder */}
+      {nextSession && nextSessionNumber && nextSessionTitleHe && (
+        <PrepareReminderClient
+          sessionNumber={nextSessionNumber}
+          sessionTitle={nextSessionTitleHe}
+          sessionDate={formatDateHe(nextSession.date)}
+        />
+      )}
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link href="/participant/insights">
+          <Card className="text-center hover:shadow-md transition-shadow cursor-pointer h-full">
+            <div className="text-2xl font-bold text-indigo-600 mb-1">0</div>
+            <div className="text-xs text-gray-500">תובנות שנשמרו</div>
+          </Card>
+        </Link>
+        <Link href="/participant/assignments">
+          <Card className="text-center hover:shadow-md transition-shadow cursor-pointer h-full">
+            <div className="text-2xl font-bold text-gray-700 mb-1">
+              {unlockedCount}
+            </div>
+            <div className="text-xs text-gray-500">מטלות זמינות</div>
+          </Card>
+        </Link>
       </div>
+
     </div>
   );
 }

@@ -4,7 +4,7 @@ import ResourcesList from "@/features/resources/ResourcesList";
 
 export default function ResourcesPage() {
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
+    <div className="max-w-3xl mx-auto px-4 py-6">
       <ParticipantPageHeader
         title="חומרי למידה"
         subtitle="קבצים, תבניות וקישורים לתוכנית"
