@@ -1,237 +1,238 @@
-/**
- * Admin service layer — all admin data access goes through this file.
- * Currently backed by mock data + localStorage.
- * Migration path: replace each function body with Supabase client calls.
- * The UI components never need to change.
- */
-
-import {
-  MOCK_PARTICIPANTS,
-  MOCK_COHORTS,
-  MOCK_ADMIN_RESOURCES,
-  MOCK_SUBMISSIONS,
-  MOCK_ASSIGNMENTS,
-} from "./mock-data";
+import { createClient } from "@/lib/supabase/client";
+import { MOCK_ASSIGNMENTS } from "./mock-data";
 import type {
-  Participant,
-  NewParticipant,
-  Cohort,
-  AdminResource,
-  NewAdminResource,
-  AssignmentCompletionStat,
-  Submission,
+  Participant, NewParticipant, Cohort, AdminResource, NewAdminResource,
+  AssignmentCompletionStat, Submission,
 } from "./types";
 
-// ── localStorage keys ──────────────────────────────────────────────────────
+// ── Participants ────────────────────────────────────────────
 
-const RESOURCES_KEY = "ofekos:admin:resources";
-const COHORTS_KEY = "ofekos:admin:cohorts";
-const PARTICIPANTS_KEY = "ofekos:admin:participants";
-
-function safeRead<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function safeWrite<T>(key: string, value: T): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-// ── Participants ────────────────────────────────────────────────────────────
-
-export function getParticipants(): Participant[] {
-  return safeRead<Participant[]>(PARTICIPANTS_KEY, MOCK_PARTICIPANTS);
-}
-
-export function saveParticipants(list: Participant[]): void {
-  safeWrite(PARTICIPANTS_KEY, list);
-}
-
-export function createParticipant(data: NewParticipant): Participant {
-  const list = getParticipants();
-  const newId = "p" + Date.now();
-  const p: Participant = {
-    id: newId,
-    name: data.name,
-    email: data.email,
+export async function getParticipants(): Promise<Participant[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, name, email, cohort_id, avatar_initials")
+    .eq("role", "participant")
+    .order("created_at");
+  if (error) throw error;
+  return (data ?? []).map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    cohortId: u.cohort_id ?? null,
     progress: 0,
-    lastActive: new Date().toISOString().split("T")[0],
+    lastActive: "",
     sessionsCompleted: 0,
     totalSessions: 6,
     managerId: "",
-    cohortId: data.cohortId,
-  };
-  const next = [...list, p];
-  saveParticipants(next);
-  if (data.cohortId) {
-    const cohorts = getCohorts();
-    const updated = cohorts.map((c) =>
-      c.id === data.cohortId
-        ? { ...c, participantIds: [...c.participantIds, newId] }
-        : c
-    );
-    saveCohorts(updated);
-  }
-  return p;
-}
-
-export function deleteParticipant(id: string): void {
-  const list = getParticipants().filter((p) => p.id !== id);
-  saveParticipants(list);
-  const cohorts = getCohorts().map((c) => ({
-    ...c,
-    participantIds: c.participantIds.filter((pid) => pid !== id),
   }));
-  saveCohorts(cohorts);
 }
 
-export function updateParticipantCohort(
-  userId: string,
-  cohortId: string | null
-): void {
-  const list = getParticipants().map((p) =>
-    p.id === userId ? { ...p, cohortId } : p
-  );
-  saveParticipants(list);
-  const cohorts = getCohorts().map((c) => {
-    const without = c.participantIds.filter((id) => id !== userId);
-    if (cohortId === c.id) return { ...c, participantIds: [...without, userId] };
-    return { ...c, participantIds: without };
+export async function createParticipant(data: NewParticipant): Promise<Participant> {
+  const res = await fetch("/api/admin/create-user", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
   });
-  saveCohorts(cohorts);
+  if (!res.ok) throw new Error(await res.text());
+  const u = await res.json();
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    cohortId: u.cohortId,
+    progress: 0,
+    lastActive: "",
+    sessionsCompleted: 0,
+    totalSessions: 6,
+    managerId: "",
+  };
 }
 
-// ── Cohorts ─────────────────────────────────────────────────────────────────
-
-export function getCohorts(): Cohort[] {
-  return safeRead<Cohort[]>(COHORTS_KEY, MOCK_COHORTS);
+export async function deleteParticipant(id: string): Promise<void> {
+  const res = await fetch("/api/admin/delete-user", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+  if (!res.ok) throw new Error(await res.text());
 }
 
-export function saveCohorts(list: Cohort[]): void {
-  safeWrite(COHORTS_KEY, list);
+export async function updateParticipantCohort(userId: string, cohortId: string | null): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.from("users").update({ cohort_id: cohortId }).eq("id", userId);
+  if (error) throw error;
 }
 
-export function createCohort(name: string): Cohort {
-  const cohorts = getCohorts();
-  const newCohort: Cohort = { id: "c" + Date.now(), name, participantIds: [] };
-  saveCohorts([...cohorts, newCohort]);
-  return newCohort;
+// ── Cohorts ─────────────────────────────────────────────────
+
+export async function getCohorts(): Promise<Cohort[]> {
+  const supabase = createClient();
+  const [{ data: cohorts, error: ce }, { data: users, error: ue }] = await Promise.all([
+    supabase.from("cohorts").select("id, name").order("created_at"),
+    supabase.from("users").select("id, cohort_id").eq("role", "participant"),
+  ]);
+  if (ce) throw ce;
+  if (ue) throw ue;
+  return (cohorts ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    participantIds: (users ?? []).filter((u) => u.cohort_id === c.id).map((u) => u.id),
+  }));
 }
 
-export function renameCohort(id: string, name: string): void {
-  const cohorts = getCohorts().map((c) => (c.id === id ? { ...c, name } : c));
-  saveCohorts(cohorts);
+export async function createCohort(name: string): Promise<Cohort> {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("cohorts").insert({ name }).select().single();
+  if (error) throw error;
+  return { id: data.id, name: data.name, participantIds: [] };
 }
 
-export function deleteCohort(id: string): void {
-  saveCohorts(getCohorts().filter((c) => c.id !== id));
-  const list = getParticipants().map((p) =>
-    p.cohortId === id ? { ...p, cohortId: null } : p
-  );
-  saveParticipants(list);
+export async function renameCohort(id: string, name: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.from("cohorts").update({ name }).eq("id", id);
+  if (error) throw error;
 }
 
-// ── Assignment lock control ─────────────────────────────────────────────────
+export async function deleteCohort(id: string): Promise<void> {
+  const supabase = createClient();
+  await supabase.from("users").update({ cohort_id: null }).eq("cohort_id", id);
+  const { error } = await supabase.from("cohorts").delete().eq("id", id);
+  if (error) throw error;
+}
 
-export function getAssignmentLockStates(): Record<string, boolean> {
-  if (typeof window === "undefined") {
+// ── Assignment lock control ──────────────────────────────────
+
+export async function getAssignmentLockStates(): Promise<Record<string, boolean>> {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("assignments").select("id, is_unlocked");
+  if (error) {
     return Object.fromEntries(MOCK_ASSIGNMENTS.map((a) => [a.id, a.isUnlocked]));
   }
-  return Object.fromEntries(
-    MOCK_ASSIGNMENTS.map((a) => {
-      const stored = localStorage.getItem(
-        `ofekos:admin:assignment:${a.id}:unlocked`
-      );
-      return [a.id, stored !== null ? stored === "true" : a.isUnlocked];
+  return Object.fromEntries((data ?? []).map((a) => [a.id, a.is_unlocked]));
+}
+
+export async function setAssignmentLocked(assignmentId: string, unlocked: boolean): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("assignments")
+    .update({ is_unlocked: unlocked, updated_at: new Date().toISOString() })
+    .eq("id", assignmentId);
+  if (error) throw error;
+  if (typeof window !== "undefined") {
+    localStorage.setItem(`ofekos:admin:assignment:${assignmentId}:unlocked`, String(unlocked));
+  }
+}
+
+// ── Resources ────────────────────────────────────────────────
+
+export async function getResources(): Promise<AdminResource[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("resources")
+    .select("id, name, type, url, file_size_kb, description, session_number, created_at")
+    .order("created_at");
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    type: r.type,
+    url: r.url,
+    fileSizeKb: r.file_size_kb,
+    description: r.description,
+    sessionNumber: r.session_number,
+    uploadedAt: (r.created_at as string).split("T")[0],
+  }));
+}
+
+export async function addResource(meta: NewAdminResource): Promise<AdminResource> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("resources")
+    .insert({
+      name: meta.name,
+      type: meta.type,
+      url: meta.url,
+      file_size_kb: meta.fileSizeKb,
+      description: meta.description,
+      session_number: meta.sessionNumber,
     })
-  );
-}
-
-export function setAssignmentLocked(
-  assignmentId: string,
-  unlocked: boolean
-): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(
-    `ofekos:admin:assignment:${assignmentId}:unlocked`,
-    String(unlocked)
-  );
-}
-
-// ── Resources ───────────────────────────────────────────────────────────────
-
-export function getResources(): AdminResource[] {
-  return safeRead<AdminResource[]>(RESOURCES_KEY, MOCK_ADMIN_RESOURCES);
-}
-
-export function addResource(meta: NewAdminResource): AdminResource {
-  const list = getResources();
-  const resource: AdminResource = {
-    ...meta,
-    id: "r" + Date.now(),
-    uploadedAt: new Date().toISOString().split("T")[0],
+    .select()
+    .single();
+  if (error) throw error;
+  return {
+    id: data.id,
+    name: data.name,
+    type: data.type,
+    url: data.url,
+    fileSizeKb: data.file_size_kb,
+    description: data.description,
+    sessionNumber: data.session_number,
+    uploadedAt: (data.created_at as string).split("T")[0],
   };
-  safeWrite(RESOURCES_KEY, [...list, resource]);
-  return resource;
 }
 
-export function deleteResource(id: string): void {
-  safeWrite(
-    RESOURCES_KEY,
-    getResources().filter((r) => r.id !== id)
-  );
+export async function deleteResource(id: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.from("resources").delete().eq("id", id);
+  if (error) throw error;
 }
 
-// ── Analytics ───────────────────────────────────────────────────────────────
+// ── Analytics ────────────────────────────────────────────────
 
-export function getCompletionStats(): AssignmentCompletionStat[] {
-  const participants = getParticipants();
-  const total = participants.length;
-
+export async function getCompletionStats(): Promise<AssignmentCompletionStat[]> {
+  const supabase = createClient();
+  const [{ data: pas }, { data: users }, { data: assignments }] = await Promise.all([
+    supabase.from("participant_assignments").select("assignment_id, status"),
+    supabase.from("users").select("id").eq("role", "participant"),
+    supabase.from("assignments").select("id, title, accent_color, is_unlocked"),
+  ]);
+  const total = (users ?? []).length;
+  const lockMap = Object.fromEntries((assignments ?? []).map((a) => [a.id, a.is_unlocked]));
+  const accentMap = Object.fromEntries((assignments ?? []).map((a) => [a.id, a.accent_color]));
+  const titleMap = Object.fromEntries((assignments ?? []).map((a) => [a.id, a.title]));
   return MOCK_ASSIGNMENTS.map((a) => {
-    const lockStates = getAssignmentLockStates();
-    if (!lockStates[a.id]) {
-      return {
-        assignmentId: a.id,
-        title: a.title,
-        accentColor: a.accentColor,
-        notStarted: 0,
-        inProgress: 0,
-        submitted: 0,
-        total,
-      };
+    if (!lockMap[a.id]) {
+      return { assignmentId: a.id, title: titleMap[a.id] ?? a.title, accentColor: accentMap[a.id] ?? a.accentColor, notStarted: 0, inProgress: 0, submitted: 0, total };
     }
-    // Derive from participant progress (rough approximation using mock data)
-    const submittedCount = MOCK_SUBMISSIONS.filter(
-      (s) => s.assignmentId === a.id
-    ).length;
-    const inProgressCount = Math.max(
-      0,
-      Math.round(total * 0.2) - (a.sessionNumber > 2 ? 1 : 0)
-    );
-    const notStarted = Math.max(0, total - submittedCount - inProgressCount);
-    return {
-      assignmentId: a.id,
-      title: a.title,
-      accentColor: a.accentColor,
-      notStarted,
-      inProgress: inProgressCount,
-      submitted: submittedCount,
-      total,
-    };
+    const rows = (pas ?? []).filter((p) => p.assignment_id === a.id);
+    const submitted = rows.filter((p) => p.status === "submitted" || p.status === "achieved").length;
+    const inProgress = rows.filter((p) => !["locked", "available", "submitted", "achieved"].includes(p.status)).length;
+    return { assignmentId: a.id, title: titleMap[a.id] ?? a.title, accentColor: accentMap[a.id] ?? a.accentColor, notStarted: Math.max(0, total - submitted - inProgress), inProgress, submitted, total };
   });
 }
 
-export function getSubmissions(): Submission[] {
-  return MOCK_SUBMISSIONS;
+export async function getSubmissions(): Promise<Submission[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("participant_assignments")
+    .select("id, user_id, assignment_id, insight, closing_action, closing_question, achieved_at, users(name), assignments(title)")
+    .not("insight", "is", null)
+    .order("achieved_at", { ascending: false });
+  if (error) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    userId: row.user_id,
+    userName: row.users?.name ?? "",
+    assignmentId: row.assignment_id,
+    assignmentTitle: row.assignments?.title ?? "",
+    insight: row.insight ?? "",
+    action: row.closing_action ?? "",
+    question: row.closing_question ?? "",
+    submittedAt: row.achieved_at?.split("T")[0] ?? "",
+  }));
 }
 
-export function getPrepareStats(): { completed: number; total: number } {
-  return { completed: 3, total: getParticipants().length };
+export async function getPrepareStats(): Promise<{ completed: number; total: number }> {
+  const supabase = createClient();
+  const [{ data: prepares }, { data: users }] = await Promise.all([
+    supabase.from("prepare_data").select("user_id, insight, dilemma, action, question"),
+    supabase.from("users").select("id").eq("role", "participant"),
+  ]);
+  const total = (users ?? []).length;
+  const completed = (prepares ?? []).filter(
+    (p) => p.insight && p.dilemma && p.action && p.question
+  ).length;
+  return { completed, total };
 }
