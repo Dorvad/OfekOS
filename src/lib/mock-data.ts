@@ -11,6 +11,9 @@ import type {
   WorkbookEntry,
   RoleConfig,
   Assignment,
+  Cohort,
+  AdminResource,
+  Submission,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -576,6 +579,7 @@ export const MOCK_PARTICIPANTS: Participant[] = [
     sessionsCompleted: 4,
     totalSessions: 5,
     managerId: "m1",
+    cohortId: "c1",
   },
   {
     id: "p2",
@@ -586,6 +590,7 @@ export const MOCK_PARTICIPANTS: Participant[] = [
     sessionsCompleted: 3,
     totalSessions: 5,
     managerId: "m1",
+    cohortId: "c2",
   },
   {
     id: "p3",
@@ -596,6 +601,7 @@ export const MOCK_PARTICIPANTS: Participant[] = [
     sessionsCompleted: 5,
     totalSessions: 5,
     managerId: "m2",
+    cohortId: "c1",
   },
   {
     id: "p4",
@@ -606,6 +612,7 @@ export const MOCK_PARTICIPANTS: Participant[] = [
     sessionsCompleted: 2,
     totalSessions: 5,
     managerId: "m2",
+    cohortId: "c2",
   },
   {
     id: "p5",
@@ -616,6 +623,102 @@ export const MOCK_PARTICIPANTS: Participant[] = [
     sessionsCompleted: 1,
     totalSessions: 5,
     managerId: "m3",
+    cohortId: null,
+  },
+];
+
+export const MOCK_COHORTS: Cohort[] = [
+  { id: "c1", name: "קבוצה א", participantIds: ["p1", "p3"] },
+  { id: "c2", name: "קבוצה ב", participantIds: ["p2", "p4"] },
+];
+
+export const MOCK_ADMIN_RESOURCES: AdminResource[] = [
+  {
+    id: "r1",
+    sessionNumber: 1,
+    name: "יסודות הניהול — מאמר מבוא",
+    type: "pdf",
+    url: null,
+    fileSizeKb: 2340,
+    description: "מאמר קצר על המעבר מתפקיד מומחה לתפקיד מנהל",
+    uploadedAt: "2025-03-10",
+  },
+  {
+    id: "r2",
+    sessionNumber: 2,
+    name: "מודל SBI — מדריך מעשי",
+    type: "link",
+    url: "https://example.com/sbi-guide",
+    fileSizeKb: null,
+    description: "מדריך מקוון לשימוש במודל Situation–Behaviour–Impact",
+    uploadedAt: "2025-04-05",
+  },
+  {
+    id: "r3",
+    sessionNumber: 3,
+    name: "ניהול שיחות קשות — תבנית",
+    type: "template",
+    url: null,
+    fileSizeKb: 480,
+    description: "תבנית Word להכנת שיחות קשות",
+    uploadedAt: "2025-05-01",
+  },
+  {
+    id: "r4",
+    sessionNumber: 1,
+    name: "סרטון: ניהול זמן כמנהל",
+    type: "video",
+    url: "https://example.com/time-mgmt",
+    fileSizeKb: null,
+    description: "סרטון 12 דקות על ניהול זמן",
+    uploadedAt: "2025-03-12",
+  },
+];
+
+export const MOCK_SUBMISSIONS: Submission[] = [
+  {
+    id: "sub1",
+    userId: "p3",
+    userName: "Roni Shapira",
+    assignmentId: "a1",
+    assignmentTitle: "כוכב הצפון שלי",
+    insight: "הבנתי שאני עדיין נמצא בחשיבה של עובד ולא של מנהל — אני פותר בעיות במקום לפתח את הצוות לפתור אותן.",
+    action: "אקיים שיחה שבועית קצרה של 15 דקות עם כל עובד כדי לעקוב אחרי ההתפתחות שלו.",
+    question: "כיצד מאזנים בין מתן עצמאות לצוות לבין שמירה על סטנדרטים?",
+    submittedAt: "2025-05-02",
+  },
+  {
+    id: "sub2",
+    userId: "p1",
+    userName: "Noa Katz",
+    assignmentId: "a1",
+    assignmentTitle: "כוכב הצפון שלי",
+    insight: "גיליתי שהכישורים שהביאו אותי לכאן — מומחיות טכנית ופתרון בעיות — הם לא מה שיוביל אותי הלאה.",
+    action: "אשתמש בשאלות פתוחות בשיחות הצוות השבועיות במקום לתת תשובות מיידיות.",
+    question: "מתי נכון להכריע לבד ומתי לערב את הצוות בהחלטה?",
+    submittedAt: "2025-05-01",
+  },
+  {
+    id: "sub3",
+    userId: "p2",
+    userName: "Yoav Levi",
+    assignmentId: "a2",
+    assignmentTitle: "שיחת משוב",
+    insight: "קשה לי לתת משוב שלילי — אני מרגיש שאני פוגע באדם. הבנתי שמשוב ספציפי וממוקד פחות מאיים מאשר הערות כלליות.",
+    action: "אתן משוב SBI אחד ספציפי עד סוף השבוע הקרוב לעמית שצריך אותו.",
+    question: "מה עושים כשהעובד מתגונן ומכחיש את ההתנהגות שתיארת?",
+    submittedAt: "2025-05-03",
+  },
+  {
+    id: "sub4",
+    userId: "p3",
+    userName: "Roni Shapira",
+    assignmentId: "a2",
+    assignmentTitle: "שיחת משוב",
+    insight: "המשוב שנתתי היה טוב מבחינה טכנית אבל פספסתי את הצד הרגשי — הייתי צריך לאפשר לו לדבר יותר.",
+    action: "אתחיל כל שיחת משוב בשאלה פתוחה לפני שאמסור את המשוב שלי.",
+    question: "איך מתמודדים עם עובד שמסכים בשיחה אבל לא משנה התנהגות בפועל?",
+    submittedAt: "2025-05-04",
   },
 ];
 

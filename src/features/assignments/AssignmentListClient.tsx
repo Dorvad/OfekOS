@@ -23,7 +23,14 @@ export default function AssignmentListClient({ assignments }: AssignmentListClie
     const s: Record<string, AssignmentStatus> = {};
     const p: Record<string, number> = {};
     for (const a of assignments) {
-      if (!a.isUnlocked) {
+      // Admin can override lock state via localStorage
+      const adminOverride = localStorage.getItem(
+        `ofekos:admin:assignment:${a.id}:unlocked`
+      );
+      const isUnlocked =
+        adminOverride !== null ? adminOverride === "true" : a.isUnlocked;
+
+      if (!isUnlocked) {
         s[a.id] = "locked";
         p[a.id] = 0;
       } else {

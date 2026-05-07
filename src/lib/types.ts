@@ -94,6 +94,61 @@ export interface Participant {
   sessionsCompleted: number;
   totalSessions: number;
   managerId: string;
+  cohortId: string | null;
+}
+
+export interface NewParticipant {
+  name: string;
+  email: string;
+  cohortId: string | null;
+}
+
+export interface Cohort {
+  id: string;
+  name: string;
+  participantIds: string[];
+}
+
+export interface AdminResource {
+  id: string;
+  sessionNumber: number;
+  name: string;
+  type: "pdf" | "link" | "template" | "video" | "other";
+  url: string | null;
+  fileSizeKb: number | null;
+  description: string;
+  uploadedAt: string;
+}
+
+export interface NewAdminResource {
+  sessionNumber: number;
+  name: string;
+  type: AdminResource["type"];
+  url: string | null;
+  fileSizeKb: number | null;
+  description: string;
+}
+
+export interface AssignmentCompletionStat {
+  assignmentId: string;
+  title: string;
+  accentColor: string;
+  notStarted: number;
+  inProgress: number;
+  submitted: number;
+  total: number;
+}
+
+export interface Submission {
+  id: string;
+  userId: string;
+  userName: string;
+  assignmentId: string;
+  assignmentTitle: string;
+  insight: string;
+  action: string;
+  question: string;
+  submittedAt: string;
 }
 
 export interface Program {

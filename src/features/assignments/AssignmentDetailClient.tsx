@@ -132,7 +132,14 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
 
   if (!hydrated) return <div className="h-64 bg-gray-100 rounded-2xl animate-pulse mt-6" />;
 
-  if (!assignment.isUnlocked) {
+  const adminOverride =
+    typeof window !== "undefined"
+      ? localStorage.getItem(`ofekos:admin:assignment:${assignment.id}:unlocked`)
+      : null;
+  const isUnlocked =
+    adminOverride !== null ? adminOverride === "true" : assignment.isUnlocked;
+
+  if (!isUnlocked) {
     return (
       <Card className="text-center py-12">
         <div className="text-3xl mb-3">🔒</div>
