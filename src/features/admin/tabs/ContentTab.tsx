@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Card from "@/components/ui/Card";
 import type { AdminResource } from "@/lib/types";
 import {
@@ -24,6 +24,17 @@ const TYPE_LABELS: Record<string, string> = {
   template: "תבנית",
   video: "וידאו",
   other: "אחר",
+};
+
+const EXT_TO_TYPE: Record<string, AdminResource["type"]> = {
+  pdf: "pdf",
+  doc: "template",
+  docx: "template",
+  ppt: "template",
+  pptx: "template",
+  png: "other",
+  jpg: "other",
+  jpeg: "other",
 };
 
 function formatSize(kb: number | null): string {
@@ -54,10 +65,33 @@ const EMPTY_FORM: ResourceForm = {
   description: "",
 };
 
+interface UploadState {
+  fileName: string;
+  fileSizeKb: number;
+  fileType: AdminResource["type"];
+  base64: string;
+  error: string;
+}
+
+const EMPTY_UPLOAD: UploadState = {
+  fileName: "",
+  fileSizeKb: 0,
+  fileType: "other",
+  base64: "",
+  error: "",
+};
+
 export default function ContentTab({ lockStates, resources, onDataChange }: Props) {
   const [locks, setLocks] = useState(lockStates);
   const [form, setForm] = useState<ResourceForm>(EMPTY_FORM);
   const [sessionFilter, setSessionFilter] = useState<string>("all");
+
+  // File upload state
+  const [upload, setUpload] = useState<UploadState>(EMPTY_UPLOAD);
+  const [uploadSession, setUploadSession] = useState("1");
+  const [uploadVisible, setUploadVisible] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleToggle(assignmentId: string) {
     const next = !locks[assignmentId];
@@ -82,6 +116,57 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
   async function handleDeleteResource(id: string) {
     await deleteResource(id);
     onDataChange();
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const sizeKb = Math.round(file.size / 1024);
+    if (file.size > 5 * 1024 * 1024) {
+      setUpload({
+        ...EMPTY_UPLOAD,
+        error: "הקובץ גדול מ-5MB. אנא בחר/י קובץ קטן יותר.",
+      });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    const fileType: AdminResource["type"] = EXT_TO_TYPE[ext] ?? "other";
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string;
+      setUpload({
+        fileName: file.name,
+        fileSizeKb: sizeKb,
+        fileType,
+        base64,
+        error: "",
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleUploadSubmit() {
+    if (!upload.base64 || !upload.fileName) return;
+    setUploading(true);
+    try {
+      await addResource({
+        name: upload.fileName,
+        sessionNumber: parseInt(uploadSession),
+        type: upload.fileType,
+        url: upload.base64,
+        fileSizeKb: upload.fileSizeKb,
+        description: "",
+      });
+      setUpload(EMPTY_UPLOAD);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      onDataChange();
+    } finally {
+      setUploading(false);
+    }
   }
 
   const filteredResources =
@@ -148,18 +233,95 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
         </Card>
       </div>
 
+      {/* ── File Upload ── */}
+      <div>
+        <h2 className="text-sm font-bold text-gray-700 mb-3">העלאת קבצי תוכנית</h2>
+        <Card className="mb-4">
+          <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">
+            העלאת קובץ
+          </h3>
+
+          <div className="space-y-3">
+            {/* File input */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                בחר/י קובץ (עד 5MB — PDF, Word, PowerPoint, תמונה)
+              </label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.doc,.pptx,.ppt,.png,.jpg,.jpeg"
+                onChange={handleFileSelect}
+                className="block w-full text-sm text-gray-700 file:mr-0 file:ml-3 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+              />
+            </div>
+
+            {/* Error */}
+            {upload.error && (
+              <p className="text-xs text-red-600 font-medium">{upload.error}</p>
+            )}
+
+            {/* File info after selection */}
+            {upload.fileName && (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-medium text-gray-800">
+                    {TYPE_ICONS[upload.fileType]} {upload.fileName}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {formatSize(upload.fileSizeKb)}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-gray-200 text-gray-600 font-medium">
+                    {TYPE_LABELS[upload.fileType]}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-gray-600">מפגש:</label>
+                  <select
+                    value={uploadSession}
+                    onChange={(e) => setUploadSession(e.target.value)}
+                    className="px-2 py-1 rounded-lg border border-gray-200 text-xs focus:outline-none bg-white"
+                    dir="rtl"
+                  >
+                    {[1, 2, 3, 4, 5, 6].map((n) => (
+                      <option key={n} value={n}>מפגש {n}</option>
+                    ))}
+                  </select>
+
+                  <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={uploadVisible}
+                      onChange={(e) => setUploadVisible(e.target.checked)}
+                      className="w-3.5 h-3.5 accent-indigo-600"
+                    />
+                    גלוי למשתתפים
+                  </label>
+                </div>
+
+                <button
+                  onClick={handleUploadSubmit}
+                  disabled={uploading}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white text-xs font-semibold rounded-xl transition-colors"
+                >
+                  {uploading ? "שומר..." : "שמור קובץ ←"}
+                </button>
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
       {/* ── Resources ── */}
       <div>
         <h2 className="text-sm font-bold text-gray-700 mb-3">חומרי למידה</h2>
 
-        {/* Supabase storage note */}
-        <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 font-medium">
-          🔗 העלאת קבצים בפועל תהיה זמינה לאחר חיבור Supabase Storage — כרגע ניתן להוסיף קישורים ומטא-דאטה
-        </div>
-
-        {/* Add form */}
+        {/* Add link form */}
         <Card className="mb-4">
-          <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">הוסף חומר למידה</h3>
+          <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">
+            הוסף קישור
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
             <div className="sm:col-span-2">
               <input
@@ -252,9 +414,18 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
                         <span className="text-base">{TYPE_ICONS[r.type]}</span>
                         <div>
                           <p className="font-medium text-gray-900">{r.name}</p>
-                          {r.url && (
+                          {r.url && !r.url.startsWith("data:") && (
                             <a href={r.url} target="_blank" rel="noreferrer" className="text-xs text-indigo-500 hover:underline" dir="ltr">
                               {r.url.slice(0, 40)}{r.url.length > 40 ? "…" : ""}
+                            </a>
+                          )}
+                          {r.url && r.url.startsWith("data:") && (
+                            <a
+                              href={r.url}
+                              download={r.name}
+                              className="text-xs text-indigo-500 hover:underline"
+                            >
+                              הורד קובץ
                             </a>
                           )}
                         </div>

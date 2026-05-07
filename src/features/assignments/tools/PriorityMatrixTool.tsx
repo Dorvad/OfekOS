@@ -1,636 +1,436 @@
 "use client";
 
+import { useState } from "react";
 import { useToolData } from "@/features/assignments/useToolData";
 import ToolStepper from "@/features/assignments/ToolStepper";
 import Card from "@/components/ui/Card";
 
-/* ── Types ── */
-interface PTask {
+interface WeekTask {
   id: string;
-  name: string;
-  category: string;
-  quadrant: "ui" | "ni" | "un" | "nn" | "";
+  text: string;
+  urgent: boolean;
+  important: boolean;
 }
 
-interface PDelegation {
-  taskName: string;
-  whom: string;
-  desiredOutcome: string;
-  checkIn: string;
+interface DisruptionItem {
+  id: string;
+  text: string;
+  decision: "move" | "delegate" | "cancel" | "keep" | "";
 }
 
-interface PriorityData {
-  step: number;
-  tasks: PTask[];
-  formName: string;
-  formCategory: string;
-  matrixConclusion: string;
-  delegations: PDelegation[];
-  timeManagementLesson: string;
-  changeNextWeek: string;
+interface WeekData {
+  tasks: WeekTask[];
+  activeDisruptions: string[];
+  disruptions: DisruptionItem[];
+  reflectionImportant: string;
+  reflectionDisplaced: string;
+  reflectionDelegation: string;
+  formText: string;
+  formUrgent: boolean;
+  formImportant: boolean;
 }
 
-/* ── Constants ── */
-const DEFAULT: PriorityData = {
-  step: 0,
+const DEFAULT: WeekData = {
   tasks: [],
-  formName: "",
-  formCategory: "",
-  matrixConclusion: "",
-  delegations: [],
-  timeManagementLesson: "",
-  changeNextWeek: "",
+  activeDisruptions: [],
+  disruptions: [],
+  reflectionImportant: "",
+  reflectionDisplaced: "",
+  reflectionDelegation: "",
+  formText: "",
+  formUrgent: false,
+  formImportant: false,
 };
 
-const STEPS_LABELS = ["משימות השבוע", "מטריצת דחוף-חשוב", "האצלה ורפלקציה"];
-
-const CATEGORIES = [
-  "ניהול שוטף",
-  "פיתוח",
-  "ממשקים",
-  "צוות",
-  "אדמיניסטרציה",
-  "אחר",
+const DISRUPTION_CARDS = [
+  "ישיבה דחופה נכנסה ליומן לאמצע יום העבודה",
+  "עובד/ת מבקש/ת עזרה מיידית בבעיה דחופה",
+  "משימה שתוכננה לשעה התארכה לשלוש שעות",
+  "בקשה לא צפויה מהממונה הדורשת מענה מהיר",
+  "תקלה בממשק עם יחידה אחרת שעוצרת תהליך",
+  "ישיבה חשובה שהוקדמה ביום",
 ];
 
-interface QuadrantDef {
-  key: "ui" | "ni" | "un" | "nn";
-  label: string;
-  short: string;
-  bg: string;
-  border: string;
-  text: string;
-  icon: string;
-  action: string;
-}
+const STEPS_LABELS = ["מה יש השבוע?", "קלפי בלת\"ם", "שיקוף"];
 
-const QUADRANTS: QuadrantDef[] = [
-  {
-    key: "ui",
-    label: "חשוב ודחוף",
-    short: "ח+ד",
-    bg: "bg-red-50",
-    border: "border-red-200",
-    text: "text-red-700",
-    icon: "🔥",
-    action: "טפל עכשיו",
-  },
-  {
-    key: "ni",
-    label: "חשוב, לא דחוף",
-    short: "ח+לא-ד",
-    bg: "bg-emerald-50",
-    border: "border-emerald-200",
-    text: "text-emerald-700",
-    icon: "🌱",
-    action: "תכנן",
-  },
-  {
-    key: "un",
-    label: "לא חשוב, דחוף",
-    short: "לא-ח+ד",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
-    text: "text-amber-700",
-    icon: "⚡",
-    action: "האצל",
-  },
-  {
-    key: "nn",
-    label: "לא חשוב, לא דחוף",
-    short: "לא-ח+לא-ד",
-    bg: "bg-gray-50",
-    border: "border-gray-200",
-    text: "text-gray-600",
-    icon: "🗑",
-    action: "שקול להסיר",
-  },
-];
+const textareaClass =
+  "w-full rounded-xl border border-gray-200 p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-400";
 
 function getId(): string {
   return Math.random().toString(36).slice(2, 9);
 }
 
-/* ── Shared style strings ── */
-const TA =
-  "w-full p-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-orange-400";
-const INPUT =
-  "w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400";
-
-/* ── Props ── */
 interface ToolProps {
   assignmentId: string;
   onComplete: () => void;
 }
 
 export default function PriorityMatrixTool({ assignmentId, onComplete }: ToolProps) {
-  const { data, update, updateMany, saved } = useToolData<PriorityData>(assignmentId, DEFAULT);
+  const { data, update, updateMany, saved } = useToolData<WeekData>(
+    assignmentId,
+    DEFAULT
+  );
+  const [step, setStep] = useState(0);
 
-  const step = data.step;
-
-  function goTo(s: number) {
-    update("step", s);
-  }
-
-  /* ── Task helpers ── */
   function addTask() {
-    if (!data.formName.trim()) return;
-    const newTask: PTask = {
+    if (!data.formText.trim()) return;
+    const task: WeekTask = {
       id: getId(),
-      name: data.formName.trim(),
-      category: data.formCategory || "אחר",
-      quadrant: "",
+      text: data.formText.trim(),
+      urgent: data.formUrgent,
+      important: data.formImportant,
     };
     updateMany({
-      tasks: [...data.tasks, newTask],
-      formName: "",
-      formCategory: "",
+      tasks: [...data.tasks, task],
+      formText: "",
+      formUrgent: false,
+      formImportant: false,
     });
   }
 
   function removeTask(id: string) {
-    const removed = data.tasks.find((t) => t.id === id);
-    const tasks = data.tasks.filter((t) => t.id !== id);
-    const delegations = removed
-      ? data.delegations.filter((d) => d.taskName !== removed.name)
-      : data.delegations;
-    updateMany({ tasks, delegations });
-  }
-
-  function setTaskQuadrant(id: string, q: PTask["quadrant"]) {
-    const tasks = data.tasks.map((t) => (t.id === id ? { ...t, quadrant: q } : t));
-    update("tasks", tasks);
-  }
-
-  /* ── Delegation helpers ── */
-  function ensureDelegation(taskName: string): PDelegation {
-    return (
-      data.delegations.find((d) => d.taskName === taskName) ?? {
-        taskName,
-        whom: "",
-        desiredOutcome: "",
-        checkIn: "",
-      }
+    update(
+      "tasks",
+      data.tasks.filter((t) => t.id !== id)
     );
   }
 
-  function updateDelegation(taskName: string, patch: Partial<PDelegation>) {
-    const existing = data.delegations.find((d) => d.taskName === taskName);
-    if (existing) {
-      update(
-        "delegations",
-        data.delegations.map((d) => (d.taskName === taskName ? { ...d, ...patch } : d))
-      );
-    } else {
-      update("delegations", [
-        ...data.delegations,
-        { taskName, whom: "", desiredOutcome: "", checkIn: "", ...patch },
-      ]);
+  function goToStep1() {
+    // Generate disruptions only once
+    if (data.activeDisruptions.length === 0) {
+      const shuffled = [...DISRUPTION_CARDS]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+      const disruptionItems: DisruptionItem[] = shuffled.map((text) => ({
+        id: getId(),
+        text,
+        decision: "",
+      }));
+      updateMany({
+        activeDisruptions: shuffled,
+        disruptions: disruptionItems,
+      });
     }
+    setStep(1);
   }
 
-  /* ── Derived ── */
-  const delegationCandidates = data.tasks.filter(
-    (t) => t.quadrant === "un" || t.quadrant === "nn"
-  );
-  const hasAnyClassified = data.tasks.some((t) => t.quadrant !== "");
+  function setDecision(
+    id: string,
+    decision: DisruptionItem["decision"]
+  ) {
+    update(
+      "disruptions",
+      data.disruptions.map((d) =>
+        d.id === id ? { ...d, decision: d.decision === decision ? "" : decision } : d
+      )
+    );
+  }
 
-  /* ────────────── RENDER ────────────── */
+  const canProceedStep0 = data.tasks.length >= 3;
+  const canProceedStep1 = data.disruptions.every((d) => d.decision !== "");
+
+  // Mini matrix preview
+  const urgent = data.tasks.filter((t) => t.urgent && t.important).length;
+  const important = data.tasks.filter((t) => !t.urgent && t.important).length;
+  const urgentOnly = data.tasks.filter((t) => t.urgent && !t.important).length;
+  const neither = data.tasks.filter((t) => !t.urgent && !t.important).length;
+
+  const decisionLabels: Record<string, string> = {
+    move: "להזיז",
+    delegate: "להאציל",
+    cancel: "לבטל",
+    keep: "לשמור בכל מחיר",
+  };
+
+  function renderStep0() {
+    return (
+      <div className="space-y-4">
+        <p className="text-xs text-gray-500 bg-orange-50 rounded-xl px-3 py-2">
+          עכשיו נבדוק אם השבוע שלך שורד את המציאות.
+        </p>
+
+        {/* Add task form */}
+        <div className="rounded-2xl border-2 border-orange-200 bg-orange-50 p-4 space-y-3">
+          <h3 className="text-sm font-bold text-orange-800">הוסף משימה</h3>
+          <input
+            type="text"
+            value={data.formText}
+            onChange={(e) => update("formText", e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addTask()}
+            placeholder="שם המשימה..."
+            dir="rtl"
+            className="w-full rounded-xl border border-orange-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+          />
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={data.formUrgent}
+                onChange={(e) => update("formUrgent", e.target.checked)}
+                className="w-4 h-4 accent-orange-500"
+              />
+              דחוף?
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={data.formImportant}
+                onChange={(e) => update("formImportant", e.target.checked)}
+                className="w-4 h-4 accent-orange-500"
+              />
+              חשוב?
+            </label>
+          </div>
+          <button
+            onClick={addTask}
+            disabled={!data.formText.trim()}
+            className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white font-semibold py-2 rounded-xl text-sm transition-colors"
+          >
+            הוסף משימה ←
+          </button>
+        </div>
+
+        {/* Task list */}
+        {data.tasks.length > 0 && (
+          <div className="space-y-2">
+            {data.tasks.map((task) => (
+              <div
+                key={task.id}
+                className="flex items-center gap-2 p-3 rounded-2xl border border-gray-100 bg-white shadow-sm"
+              >
+                <span className="flex-1 text-sm text-gray-800 text-right">
+                  {task.text}
+                </span>
+                <div className="flex gap-1 shrink-0">
+                  {task.urgent && (
+                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
+                      דחוף
+                    </span>
+                  )}
+                  {task.important && (
+                    <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">
+                      חשוב
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => removeTask(task.id)}
+                  className="text-gray-300 hover:text-red-400 transition-colors text-sm shrink-0"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Mini matrix preview */}
+        {data.tasks.length > 0 && (
+          <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+              תמונת שבוע
+            </p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-2 text-center">
+                <p className="font-bold text-red-700">{urgent}</p>
+                <p className="text-gray-500">חשוב+דחוף</p>
+              </div>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-2 text-center">
+                <p className="font-bold text-emerald-700">{important}</p>
+                <p className="text-gray-500">חשוב+לא דחוף</p>
+              </div>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-2 text-center">
+                <p className="font-bold text-amber-700">{urgentOnly}</p>
+                <p className="text-gray-500">דחוף+לא חשוב</p>
+              </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-2 text-center">
+                <p className="font-bold text-gray-500">{neither}</p>
+                <p className="text-gray-500">לא חשוב+לא דחוף</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!canProceedStep0 && (
+          <p className="text-xs text-gray-400 text-center">
+            הוסף/י לפחות 3 משימות כדי להמשיך
+          </p>
+        )}
+
+        <button
+          onClick={goToStep1}
+          disabled={!canProceedStep0}
+          className="w-full py-3 rounded-xl bg-orange-500 disabled:opacity-40 text-white font-semibold text-sm hover:bg-orange-600 transition-colors"
+        >
+          המשך ←
+        </button>
+      </div>
+    );
+  }
+
+  function renderStep1() {
+    return (
+      <div className="space-y-4">
+        <p className="text-xs text-gray-500 bg-orange-50 rounded-xl px-3 py-2">
+          נכנסו 3 בלת&quot;מים לשבוע שלך. מה תעשה/י עם כל אחד?
+        </p>
+
+        <div className="space-y-4">
+          {data.disruptions.map((d) => (
+            <div
+              key={d.id}
+              className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-4 shadow-sm"
+            >
+              <p className="font-semibold text-sm text-amber-900 mb-3">
+                ⚡ {d.text}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {(["move", "delegate", "cancel", "keep"] as const).map(
+                  (decision) => (
+                    <button
+                      key={decision}
+                      type="button"
+                      onClick={() => setDecision(d.id, decision)}
+                      className={`py-2 rounded-xl text-xs font-semibold border-2 transition-colors ${
+                        d.decision === decision
+                          ? "border-orange-500 bg-orange-500 text-white"
+                          : "border-amber-300 text-amber-800 hover:border-orange-400"
+                      }`}
+                    >
+                      {decisionLabels[decision]}
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {!canProceedStep1 && (
+          <p className="text-xs text-gray-400 text-center">
+            יש להחליט על כל 3 הבלת&quot;מים כדי להמשיך
+          </p>
+        )}
+
+        <div className="flex justify-between items-center">
+          <button
+            onClick={() => setStep(0)}
+            className="text-sm text-gray-400 hover:text-gray-600"
+          >
+            → חזרה
+          </button>
+          <button
+            onClick={() => setStep(2)}
+            disabled={!canProceedStep1}
+            className="py-2.5 px-6 rounded-xl bg-orange-500 disabled:opacity-40 text-white font-semibold text-sm hover:bg-orange-600 transition-colors"
+          >
+            המשך ←
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function renderStep2() {
+    const movedCount = data.disruptions.filter(
+      (d) => d.decision !== "keep"
+    ).length;
+    const keptCount = data.disruptions.filter(
+      (d) => d.decision === "keep"
+    ).length;
+
+    return (
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-orange-100 bg-orange-50 p-4 shadow-sm">
+          <p className="text-xs font-semibold text-orange-700 mb-2">סיכום השבוע</p>
+          <p className="text-sm text-gray-700">
+            {keptCount} מ-3 הבלת&quot;מים שמרת — {movedCount} שינית.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
+            זמן למשימות חשובות ולא דחופות
+          </p>
+          <p className="text-xs text-gray-500 mb-2">
+            כמה זמן נשאר למשימות חשובות ולא דחופות?
+          </p>
+          <textarea
+            value={data.reflectionImportant}
+            onChange={(e) => update("reflectionImportant", e.target.value)}
+            rows={3}
+            dir="rtl"
+            className={textareaClass}
+            placeholder="כתוב/י כאן..."
+          />
+        </div>
+
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
+            משימות שנדחקו
+          </p>
+          <p className="text-xs text-gray-500 mb-2">
+            אילו משימות נדחקו בגלל דחוף ולא חשוב?
+          </p>
+          <textarea
+            value={data.reflectionDisplaced}
+            onChange={(e) => update("reflectionDisplaced", e.target.value)}
+            rows={3}
+            dir="rtl"
+            className={textareaClass}
+            placeholder="כתוב/י כאן..."
+          />
+        </div>
+
+        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
+            הזדמנות האצלה
+          </p>
+          <p className="text-xs text-gray-500 mb-2">
+            איפה הייתה הזדמנות להאצלה?
+          </p>
+          <textarea
+            value={data.reflectionDelegation}
+            onChange={(e) => update("reflectionDelegation", e.target.value)}
+            rows={3}
+            dir="rtl"
+            className={textareaClass}
+            placeholder="כתוב/י כאן..."
+          />
+        </div>
+
+        <div className="flex justify-between items-center">
+          <button
+            onClick={() => setStep(1)}
+            className="text-sm text-gray-400 hover:text-gray-600"
+          >
+            → חזרה
+          </button>
+          <button
+            onClick={onComplete}
+            className="py-2.5 px-6 rounded-xl bg-orange-500 text-white font-semibold text-sm hover:bg-orange-600 transition-colors"
+          >
+            שמור/י כ&apos;תוכנית שבועית&apos; בתיק ←
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Card>
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-bold text-gray-900 text-base">ניהול עצמי ועדיפויות</h2>
-        {saved && <span className="text-xs text-emerald-600">נשמר ✓</span>}
+        <h2 className="font-bold text-gray-900 text-base">שבוע תחת עומס</h2>
+        {saved && (
+          <span className="text-xs text-emerald-600">נשמר אוטומטית ✓</span>
+        )}
       </div>
 
       <ToolStepper steps={STEPS_LABELS} current={step} accent="orange" />
 
-      {/* ══ STEP 0: משימות השבוע ══ */}
-      {step === 0 && (
-        <div className="space-y-5">
-          <p className="text-xs text-gray-500 bg-orange-50 rounded-xl px-3 py-2">
-            הזן/י את המשימות שלך השבוע — לא חייב/ת הכל, רק את המשמעותיות
-          </p>
-
-          {/* Add task form */}
-          <div className="rounded-xl border-2 border-orange-200 bg-orange-50 p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-orange-800">הוספת משימה</h3>
-
-            {/* Task name */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                שם המשימה
-              </label>
-              <input
-                type="text"
-                value={data.formName}
-                onChange={(e) => update("formName", e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addTask()}
-                placeholder="שם המשימה..."
-                dir="rtl"
-                className="w-full px-3 py-2 rounded-xl border border-orange-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-              />
-            </div>
-
-            {/* Category chips */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-2">קטגוריה</label>
-              <div className="flex flex-wrap gap-1.5">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() =>
-                      update("formCategory", data.formCategory === cat ? "" : cat)
-                    }
-                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                      data.formCategory === cat
-                        ? "bg-orange-500 text-white border-orange-500"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-orange-300"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              onClick={addTask}
-              disabled={!data.formName.trim()}
-              className="w-full bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white font-semibold py-2 rounded-xl text-sm transition-colors"
-            >
-              הוסף ←
-            </button>
-          </div>
-
-          {/* Task list */}
-          {data.tasks.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                משימות ({data.tasks.length})
-              </p>
-              {data.tasks.map((task) => {
-                const qInfo = QUADRANTS.find((q) => q.key === task.quadrant);
-                return (
-                  <div
-                    key={task.id}
-                    className="flex items-center gap-2 p-3 rounded-xl border border-gray-200 bg-white"
-                  >
-                    {/* Task name */}
-                    <span className="flex-1 text-sm font-medium text-gray-800 text-right">
-                      {task.name}
-                    </span>
-
-                    {/* Category chip */}
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-700 font-medium shrink-0">
-                      {task.category}
-                    </span>
-
-                    {/* Quadrant selector — 4 mini chips */}
-                    <div className="flex gap-1 shrink-0 flex-wrap">
-                      {QUADRANTS.map((q) => (
-                        <button
-                          key={q.key}
-                          type="button"
-                          onClick={() =>
-                            setTaskQuadrant(task.id, task.quadrant === q.key ? "" : q.key)
-                          }
-                          title={`${q.label} — ${q.action}`}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border transition-colors ${
-                            task.quadrant === q.key
-                              ? `${q.bg} ${q.text} border-current`
-                              : "bg-gray-50 text-gray-400 border-gray-200 hover:border-gray-300"
-                          }`}
-                        >
-                          {q.short}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Current quadrant icon */}
-                    {qInfo && (
-                      <span className={`text-xs ${qInfo.text} font-medium shrink-0`}>
-                        {qInfo.icon}
-                      </span>
-                    )}
-
-                    {/* Remove */}
-                    <button
-                      onClick={() => removeTask(task.id)}
-                      className="text-gray-300 hover:text-red-400 transition-colors text-sm shrink-0"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Tip */}
-          <p className="text-xs text-gray-500 bg-gray-50 rounded-xl px-3 py-2">
-            💡 חשוב = תורם ליעדים. דחוף = יש דדליין קרוב.
-          </p>
-
-          <div className="flex justify-end">
-            <button
-              onClick={() => goTo(1)}
-              disabled={data.tasks.length === 0}
-              className="bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
-            >
-              המשך ←
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ══ STEP 1: מטריצת דחוף-חשוב ══ */}
-      {step === 1 && (
-        <div className="space-y-5">
-          <p className="text-xs text-gray-500 bg-orange-50 rounded-xl px-3 py-2">
-            כך נראה חלוקת המשימות שלך — מה זה אומר עליך?
-          </p>
-
-          {!hasAnyClassified ? (
-            <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-center text-sm text-orange-700">
-              חזור/י לשלב הקודם ובחר/י רבע לכל משימה
-            </div>
-          ) : (
-            /* 2×2 grid
-               RTL layout — grid-cols-2 renders right-to-left in RTL context.
-               We want:
-                 top-right = ui (חשוב ודחוף)    top-left = ni (חשוב, לא דחוף)
-                 bottom-right = un (לא חשוב, דחוף) bottom-left = nn (לא חשוב, לא דחוף)
-               In RTL the first column is on the right, so order: ui, ni, un, nn */
-            <div>
-              {/* Axis labels */}
-              <div className="flex justify-between text-[10px] text-gray-400 font-medium mb-1 px-1">
-                <span>← לא דחוף</span>
-                <span>דחוף →</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {QUADRANTS.map((q) => {
-                  const tasksInQ = data.tasks.filter((t) => t.quadrant === q.key);
-                  return (
-                    <div
-                      key={q.key}
-                      className={`rounded-xl border-2 p-3 min-h-[110px] ${q.bg} ${q.border}`}
-                    >
-                      <p className={`text-xs font-bold mb-0.5 ${q.text}`}>
-                        {q.icon} {q.label}
-                      </p>
-                      <p className="text-[10px] text-gray-500 mb-2">{q.action}</p>
-                      <div className="flex flex-wrap gap-1">
-                        {tasksInQ.length === 0 && (
-                          <span className="text-[10px] text-gray-400 italic">אין משימות</span>
-                        )}
-                        {tasksInQ.map((t) => (
-                          <span
-                            key={t.id}
-                            className="inline-block text-xs bg-white/80 rounded-full px-2 py-0.5 font-medium text-gray-700"
-                          >
-                            {t.name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Matrix conclusion */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              מה המסקנה?
-            </label>
-            <p className="text-xs text-gray-400 mb-1.5">
-              מה הדפוס שאתה/ת רואה? על מה אתה/ת מוציא/ה את הזמן שלך?
-            </p>
-            <textarea
-              value={data.matrixConclusion}
-              onChange={(e) => update("matrixConclusion", e.target.value)}
-              rows={3}
-              dir="rtl"
-              className={TA}
-              placeholder="כתוב/י כאן..."
-            />
-          </div>
-
-          <div className="flex justify-between">
-            <button
-              onClick={() => goTo(0)}
-              className="text-gray-500 hover:text-gray-700 font-medium text-sm px-4 py-2.5 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors"
-            >
-              → חזרה
-            </button>
-            <button
-              onClick={() => goTo(2)}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
-            >
-              המשך ←
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ══ STEP 2: האצלה ורפלקציה ══ */}
-      {step === 2 && (
-        <div className="space-y-5">
-          <p className="text-xs text-gray-500 bg-orange-50 rounded-xl px-3 py-2">
-            זהה/י מה ניתן להאציל ולמי
-          </p>
-
-          {delegationCandidates.length > 0 ? (
-            <div className="space-y-3">
-              <p className="text-xs font-semibold text-gray-600">
-                מועמדות להאצלה ({delegationCandidates.length})
-              </p>
-              {delegationCandidates.map((task) => {
-                const del = ensureDelegation(task.name);
-                const qInfo = QUADRANTS.find((q) => q.key === task.quadrant);
-                return (
-                  <div
-                    key={task.id}
-                    className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-gray-800">{task.name}</span>
-                      {qInfo && (
-                        <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${qInfo.bg} ${qInfo.text} border ${qInfo.border}`}
-                        >
-                          {qInfo.label}
-                        </span>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        למי להאציל?
-                      </label>
-                      <input
-                        type="text"
-                        value={del.whom}
-                        onChange={(e) => updateDelegation(task.name, { whom: e.target.value })}
-                        dir="rtl"
-                        placeholder="שם או תפקיד..."
-                        className="w-full px-3 py-2 rounded-xl border border-amber-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        מה התוצאה הרצויה?
-                      </label>
-                      <textarea
-                        value={del.desiredOutcome}
-                        onChange={(e) =>
-                          updateDelegation(task.name, { desiredOutcome: e.target.value })
-                        }
-                        rows={2}
-                        dir="rtl"
-                        placeholder="מה בדיוק אני מבקש/ת שיעשה/תעשה?"
-                        className={TA}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        מתי לבדוק התקדמות?
-                      </label>
-                      <input
-                        type="text"
-                        value={del.checkIn}
-                        onChange={(e) =>
-                          updateDelegation(task.name, { checkIn: e.target.value })
-                        }
-                        dir="rtl"
-                        placeholder="תאריך / תדירות..."
-                        className="w-full px-3 py-2 rounded-xl border border-amber-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            /* No delegation candidates — encouraging message + free-form */
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
-              <p className="text-sm text-gray-600">
-                אין משימות ברובריקת &quot;לא חשוב / דחוף&quot; — מצוין! 🎉
-              </p>
-              <p className="text-xs text-gray-500">
-                אם יש משהו שעדיין תרצה/י להאציל, תוכל/י לתכנן אותו כאן:
-              </p>
-
-              {(() => {
-                const del = ensureDelegation("__free__");
-                return (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        למי להאציל?
-                      </label>
-                      <input
-                        type="text"
-                        value={del.whom}
-                        onChange={(e) =>
-                          updateDelegation("__free__", { whom: e.target.value })
-                        }
-                        dir="rtl"
-                        placeholder="שם או תפקיד..."
-                        className={INPUT}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        מה התוצאה הרצויה?
-                      </label>
-                      <textarea
-                        value={del.desiredOutcome}
-                        onChange={(e) =>
-                          updateDelegation("__free__", { desiredOutcome: e.target.value })
-                        }
-                        rows={2}
-                        dir="rtl"
-                        placeholder="מה בדיוק אני מבקש/ת שיעשה/תעשה?"
-                        className={TA}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        מתי לבדוק התקדמות?
-                      </label>
-                      <input
-                        type="text"
-                        value={del.checkIn}
-                        onChange={(e) =>
-                          updateDelegation("__free__", { checkIn: e.target.value })
-                        }
-                        dir="rtl"
-                        placeholder="תאריך / תדירות..."
-                        className={INPUT}
-                      />
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-
-          {/* Reflection */}
-          <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-4">
-            <h3 className="text-sm font-semibold text-gray-700">רפלקציה</h3>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                מה למדתי על ניהול הזמן שלי?
-              </label>
-              <textarea
-                value={data.timeManagementLesson}
-                onChange={(e) => update("timeManagementLesson", e.target.value)}
-                rows={3}
-                dir="rtl"
-                className={TA}
-                placeholder="כתוב/י כאן..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                מה אשנה בשבוע הבא?
-              </label>
-              <textarea
-                value={data.changeNextWeek}
-                onChange={(e) => update("changeNextWeek", e.target.value)}
-                rows={3}
-                dir="rtl"
-                className={TA}
-                placeholder="כתוב/י כאן..."
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-between">
-            <button
-              onClick={() => goTo(1)}
-              className="text-gray-500 hover:text-gray-700 font-medium text-sm px-4 py-2.5 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors"
-            >
-              → חזרה
-            </button>
-            <button
-              onClick={onComplete}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors"
-            >
-              סיימתי ←
-            </button>
-          </div>
-        </div>
-      )}
+      {step === 0 && renderStep0()}
+      {step === 1 && renderStep1()}
+      {step === 2 && renderStep2()}
     </Card>
   );
 }
