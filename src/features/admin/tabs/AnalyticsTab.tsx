@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import type { AssignmentCompletionStat, Submission } from "@/lib/types";
 import type { Cohort } from "@/lib/types";
 import { MOCK_ASSIGNMENTS } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/client";
 
 const ACCENT_BG: Record<string, string> = {
   amber:   "bg-amber-400",
@@ -25,6 +26,7 @@ interface Props {
   prepareStats: { completed: number; total: number };
   cohorts: Cohort[];
   lockStates: Record<string, boolean>;
+  onReload: () => void;
 }
 
 export default function AnalyticsTab({
@@ -33,9 +35,28 @@ export default function AnalyticsTab({
   prepareStats,
   cohorts,
   lockStates,
+  onReload,
 }: Props) {
   const [assignmentFilter, setAssignmentFilter] = useState("all");
   const [cohortFilter, setCohortFilter] = useState("all");
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("analytics-pa-submitted")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "participant_assignments",
+          filter: "status=eq.submitted",
+        },
+        () => { onReload(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [onReload]);
 
   const filteredSubmissions = submissions.filter((s) => {
     const matchAssignment = assignmentFilter === "all" || s.assignmentId === assignmentFilter;
@@ -189,16 +210,12 @@ export default function AnalyticsTab({
         </Card>
       </div>
 
-      {/* ── Supabase banner ── */}
-      <div className="px-5 py-4 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-start gap-3">
-        <span className="text-xl shrink-0 mt-0.5">📊</span>
-        <div>
-          <p className="text-sm font-semibold text-indigo-800">נתונים בזמן אמת עם Supabase</p>
-          <p className="text-xs text-indigo-600 mt-0.5">
-            לאחר חיבור Supabase, נתוני ההגשות, ההתקדמות, וההכנה יתעדכנו אוטומטית בזמן אמת.
-            כרגע מוצגים נתוני דמו לדוגמה.
-          </p>
-        </div>
+      {/* ── Live indicator ── */}
+      <div className="px-5 py-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3">
+        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+        <p className="text-sm font-medium text-emerald-800">
+          האנליטיקה מתעדכנת בזמן אמת — כל הגשה חדשה תופיע כאן אוטומטית
+        </p>
       </div>
     </div>
   );

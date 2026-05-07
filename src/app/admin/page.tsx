@@ -105,6 +105,7 @@ export default function AdminPage() {
             lockStates={lockStates}
             cohortCount={cohorts.length}
             onNavigate={setActiveTab}
+            onReload={reload}
           />
         )}
         {activeTab === "participants" && (
@@ -135,6 +136,7 @@ export default function AdminPage() {
             prepareStats={prepareStats}
             cohorts={cohorts}
             lockStates={lockStates}
+            onReload={reload}
           />
         )}
       </main>
