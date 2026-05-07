@@ -59,15 +59,15 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
   const [form, setForm] = useState<ResourceForm>(EMPTY_FORM);
   const [sessionFilter, setSessionFilter] = useState<string>("all");
 
-  function handleToggle(assignmentId: string) {
+  async function handleToggle(assignmentId: string) {
     const next = !locks[assignmentId];
     setLocks((prev) => ({ ...prev, [assignmentId]: next }));
-    setAssignmentLocked(assignmentId, next);
+    await setAssignmentLocked(assignmentId, next);
   }
 
-  function handleAddResource() {
+  async function handleAddResource() {
     if (!form.name.trim()) return;
-    addResource({
+    await addResource({
       name: form.name.trim(),
       sessionNumber: parseInt(form.sessionNumber),
       type: form.type as AdminResource["type"],
@@ -79,8 +79,8 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
     onDataChange();
   }
 
-  function handleDeleteResource(id: string) {
-    deleteResource(id);
+  async function handleDeleteResource(id: string) {
+    await deleteResource(id);
     onDataChange();
   }
 

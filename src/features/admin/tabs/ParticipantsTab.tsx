@@ -43,6 +43,7 @@ export default function ParticipantsTab({ participants, cohorts, onDataChange }:
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [changeCohortFor, setChangeCohortFor] = useState<string | null>(null);
   const [form, setForm] = useState<AddForm>({ name: "", email: "", cohortId: "" });
+  const [busy, setBusy] = useState(false);
 
   const filtered = participants.filter((p) => {
     const matchSearch =
@@ -54,26 +55,40 @@ export default function ParticipantsTab({ participants, cohorts, onDataChange }:
     return matchSearch && matchCohort;
   });
 
-  function handleAdd() {
+  async function handleAdd() {
     if (!form.name.trim() || !form.email.trim()) return;
-    createParticipant({
-      name: form.name.trim(),
-      email: form.email.trim(),
-      cohortId: form.cohortId || null,
-    });
-    setForm({ name: "", email: "", cohortId: "" });
-    setShowAdd(false);
-    onDataChange();
+    setBusy(true);
+    try {
+      await createParticipant({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        cohortId: form.cohortId || null,
+      });
+      setForm({ name: "", email: "", cohortId: "" });
+      setShowAdd(false);
+      onDataChange();
+    } catch (err) {
+      alert("שגיאה בהוספת משתתף: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function handleDelete(id: string) {
-    deleteParticipant(id);
-    setDeleteTarget(null);
-    onDataChange();
+  async function handleDelete(id: string) {
+    setBusy(true);
+    try {
+      await deleteParticipant(id);
+      setDeleteTarget(null);
+      onDataChange();
+    } catch (err) {
+      alert("שגיאה במחיקת משתתף: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function handleChangeCohort(userId: string, cohortId: string) {
-    updateParticipantCohort(userId, cohortId === "none" ? null : cohortId);
+  async function handleChangeCohort(userId: string, cohortId: string) {
+    await updateParticipantCohort(userId, cohortId === "none" ? null : cohortId);
     setChangeCohortFor(null);
     setOpenMenu(null);
     onDataChange();
@@ -299,10 +314,10 @@ export default function ParticipantsTab({ participants, cohorts, onDataChange }:
               </button>
               <button
                 onClick={handleAdd}
-                disabled={!form.name.trim() || !form.email.trim()}
+                disabled={!form.name.trim() || !form.email.trim() || busy}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold transition-colors"
               >
-                הוסף ←
+                {busy ? "שולח..." : "הוסף ←"}
               </button>
             </div>
           </div>
@@ -325,9 +340,10 @@ export default function ParticipantsTab({ participants, cohorts, onDataChange }:
               </button>
               <button
                 onClick={() => handleDelete(deleteTarget.id)}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors"
+                disabled={busy}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold transition-colors"
               >
-                מחק 🗑️
+                {busy ? "מוחק..." : "מחק 🗑️"}
               </button>
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { MOCK_SESSIONS, MOCK_ASSIGNMENTS } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/client";
 import Card from "@/components/ui/Card";
 import Link from "next/link";
 
@@ -75,13 +76,45 @@ export default function PreparePage() {
   const [data, setData] = useState<PrepareData>(EMPTY);
   const [saved, setSaved] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const nextSession = MOCK_SESSIONS.find((s) => s.status === "upcoming" || s.status === "active");
+  const nextSessionNumber = nextSession
+    ? parseInt(nextSession.id.replace("s", ""), 10)
+    : null;
 
   useEffect(() => {
     const raw = localStorage.getItem(PREPARE_KEY);
     if (raw) {
       try { setData(JSON.parse(raw)); } catch { /* ignore */ }
     }
-    setHydrated(true);
+
+    // Sync from Supabase
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && nextSessionNumber) {
+        const { data: dbData } = await supabase
+          .from("prepare_data")
+          .select("insight, dilemma, action, question")
+          .eq("user_id", user.id)
+          .eq("session_number", nextSessionNumber)
+          .single();
+        if (dbData) {
+          const merged = {
+            insight: dbData.insight ?? "",
+            dilemma: dbData.dilemma ?? "",
+            action: dbData.action ?? "",
+            question: dbData.question ?? "",
+          };
+          setData(merged);
+          localStorage.setItem(PREPARE_KEY, JSON.stringify(merged));
+        }
+        setUserId(user.id);
+      }
+      setHydrated(true);
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function handleChange(key: keyof PrepareData, value: string) {
@@ -91,12 +124,16 @@ export default function PreparePage() {
     localStorage.setItem(PREPARE_KEY, JSON.stringify(next));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-  }
 
-  const nextSession = MOCK_SESSIONS.find((s) => s.status === "upcoming" || s.status === "active");
-  const nextSessionNumber = nextSession
-    ? parseInt(nextSession.id.replace("s", ""), 10)
-    : null;
+    if (userId && nextSessionNumber) {
+      const supabase = createClient();
+      void supabase.from("prepare_data").upsert({
+        user_id: userId,
+        session_number: nextSessionNumber,
+        ...next,
+      }, { onConflict: "user_id,session_number" });
+    }
+  }
 
   const nextAssignment = nextSessionNumber
     ? MOCK_ASSIGNMENTS.find((a) => a.sessionNumber === nextSessionNumber)
