@@ -551,48 +551,7 @@ export const MOCK_COHORTS: Cohort[] = [
   { id: "c2", name: "קבוצה ב", participantIds: ["p2", "p4"] },
 ];
 
-export const MOCK_ADMIN_RESOURCES: AdminResource[] = [
-  {
-    id: "r1",
-    sessionNumber: 1,
-    name: "יסודות הניהול — מאמר מבוא",
-    type: "pdf",
-    url: null,
-    fileSizeKb: 2340,
-    description: "מאמר קצר על המעבר מתפקיד מומחה לתפקיד מנהל",
-    uploadedAt: "2025-03-10",
-  },
-  {
-    id: "r2",
-    sessionNumber: 2,
-    name: "מודל SBI — מדריך מעשי",
-    type: "link",
-    url: "https://example.com/sbi-guide",
-    fileSizeKb: null,
-    description: "מדריך מקוון לשימוש במודל Situation–Behaviour–Impact",
-    uploadedAt: "2025-04-05",
-  },
-  {
-    id: "r3",
-    sessionNumber: 3,
-    name: "ניהול שיחות קשות — תבנית",
-    type: "template",
-    url: null,
-    fileSizeKb: 480,
-    description: "תבנית Word להכנת שיחות קשות",
-    uploadedAt: "2025-05-01",
-  },
-  {
-    id: "r4",
-    sessionNumber: 1,
-    name: "סרטון: ניהול זמן כמנהל",
-    type: "video",
-    url: "https://example.com/time-mgmt",
-    fileSizeKb: null,
-    description: "סרטון 12 דקות על ניהול זמן",
-    uploadedAt: "2025-03-12",
-  },
-];
+export const MOCK_ADMIN_RESOURCES: AdminResource[] = [];
 
 export const MOCK_SUBMISSIONS: Submission[] = [
   {

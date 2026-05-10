@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { MOCK_USER, MOCK_PROGRAM } from "@/lib/mock-data";
+import { MOCK_PROGRAM } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/client";
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -112,9 +114,35 @@ function NavIcon({ navKey, active }: { navKey: string; active: boolean }) {
 
 export default function ParticipantShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const activeKey = getActiveKey(pathname);
-  const firstName = MOCK_USER.name.split(" ")[0];
-  const initials = MOCK_USER.avatarInitials;
+
+  const [firstName, setFirstName] = useState<string>("");
+  const [initials, setInitials] = useState<string>("?");
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("users")
+        .select("name, avatar_initials")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.name) {
+            setFirstName(data.name.split(" ")[0]);
+            setInitials(data.avatar_initials ?? data.name.slice(0, 2).toUpperCase());
+          }
+        });
+    });
+  }, []);
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -152,12 +180,21 @@ export default function ParticipantShell({ children }: { children: React.ReactNo
             })}
           </nav>
 
-          {/* User avatar */}
+          {/* User + logout */}
           <div className="flex items-center gap-2 shrink-0">
-            <span className="hidden sm:block text-xs text-gray-500">{firstName}</span>
+            {firstName && (
+              <span className="hidden sm:block text-xs text-gray-500">{firstName}</span>
+            )}
             <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
               {initials}
             </div>
+            <button
+              onClick={handleLogout}
+              className="text-xs text-gray-400 hover:text-red-500 transition-colors px-2 py-1 rounded-lg hover:bg-red-50 font-medium"
+              title="יציאה מהמערכת"
+            >
+              יציאה
+            </button>
           </div>
         </div>
       </header>

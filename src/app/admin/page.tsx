@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import AdminTabNav, { type AdminTab } from "@/features/admin/AdminTabNav";
 import OverviewTab from "@/features/admin/tabs/OverviewTab";
 import ParticipantsTab from "@/features/admin/tabs/ParticipantsTab";
@@ -20,9 +21,11 @@ import {
 import type { Participant, Cohort, AdminResource, AssignmentCompletionStat, Submission } from "@/lib/types";
 
 export default function AdminPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [hydrated, setHydrated] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [adminName, setAdminName] = useState<string>("");
 
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
@@ -31,6 +34,23 @@ export default function AdminPage() {
   const [completionStats, setCompletionStats] = useState<AssignmentCompletionStat[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [prepareStats, setPrepareStats] = useState({ completed: 0, total: 0 });
+
+  // Guard: check admin role on mount
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) { router.replace("/login"); return; }
+      supabase
+        .from("users")
+        .select("role, name")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.role !== "admin") { router.replace("/participant"); return; }
+          setAdminName(data.name?.split(" ")[0] ?? "Admin");
+        });
+    });
+  }, [router]);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -62,6 +82,12 @@ export default function AdminPage() {
     reload().then(() => setHydrated(true));
   }, [reload]);
 
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
+
   if (!hydrated) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -81,15 +107,21 @@ export default function AdminPage() {
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
-              ← בית
-            </Link>
+            <span className="text-sm font-bold text-gray-900">OfekOS</span>
             <span className="text-gray-200">|</span>
-            <h1 className="text-sm font-bold text-gray-900">ניהול מערכת</h1>
+            <h1 className="text-sm font-bold text-gray-700">ניהול מערכת</h1>
           </div>
-          <span className={`px-2.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full transition-opacity ${loading ? "opacity-50" : "opacity-100"}`}>
-            {loading ? "..." : "Admin"}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className={`px-2.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full transition-opacity ${loading ? "opacity-50" : "opacity-100"}`}>
+              {loading ? "..." : (adminName ? `Admin · ${adminName}` : "Admin")}
+            </span>
+            <button
+              onClick={handleLogout}
+              className="text-xs text-gray-400 hover:text-red-500 transition-colors px-2.5 py-1 rounded-lg hover:bg-red-50 font-medium border border-gray-200 hover:border-red-200"
+            >
+              יציאה
+            </button>
+          </div>
         </div>
       </div>
 

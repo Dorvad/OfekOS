@@ -1,8 +1,12 @@
 import Link from "next/link";
-import { MOCK_USER, MOCK_PROGRAM, MOCK_ASSIGNMENTS, MOCK_SESSIONS } from "@/lib/mock-data";
+import { MOCK_PROGRAM, MOCK_ASSIGNMENTS, MOCK_SESSIONS } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
 import Card from "@/components/ui/Card";
 import ProgramAxisClient from "@/features/assignments/ProgramAxisClient";
 import PrepareReminderClient from "@/features/assignments/PrepareReminderClient";
+import type { Assignment } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
 
 const SESSION_TITLES_HE: Record<string, string> = {
   s1: "יסודות הניהול",
@@ -31,10 +35,39 @@ const accentHero: Record<string, string> = {
   indigo:  "from-indigo-500 to-indigo-600",
 };
 
-export default function ParticipantDashboard() {
-  const currentAssignment = MOCK_ASSIGNMENTS.find((a) => a.isUnlocked);
-  const unlockedCount = MOCK_ASSIGNMENTS.filter((a) => a.isUnlocked).length;
-  const firstName = MOCK_USER.name.split(" ")[0];
+export default async function ParticipantDashboard() {
+  const supabase = await createClient();
+
+  // Fetch real user name
+  let firstName = "משתתף";
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("name")
+      .eq("id", user.id)
+      .single();
+    if (userData?.name) {
+      firstName = userData.name.split(" ")[0];
+    }
+  }
+
+  // Fetch real lock states from Supabase assignments table
+  const { data: dbAssignments } = await supabase
+    .from("assignments")
+    .select("id, is_unlocked");
+
+  const lockMap = Object.fromEntries(
+    (dbAssignments ?? []).map((a) => [a.id, a.is_unlocked])
+  );
+
+  const assignments: Assignment[] = MOCK_ASSIGNMENTS.map((a) => ({
+    ...a,
+    isUnlocked: lockMap[a.id] !== undefined ? lockMap[a.id] : a.isUnlocked,
+  }));
+
+  const currentAssignment = assignments.find((a) => a.isUnlocked);
+  const unlockedCount = assignments.filter((a) => a.isUnlocked).length;
 
   const nextSession = MOCK_SESSIONS.find((s) => s.status === "upcoming" || s.status === "active");
   const nextSessionNumber = nextSession ? parseInt(nextSession.id.replace("s", ""), 10) : null;
@@ -79,10 +112,10 @@ export default function ParticipantDashboard() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-800">המסע שלך</h2>
           <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-            {unlockedCount}/{MOCK_ASSIGNMENTS.length} פתוחות
+            {unlockedCount}/{assignments.length} פתוחות
           </span>
         </div>
-        <ProgramAxisClient assignments={MOCK_ASSIGNMENTS} />
+        <ProgramAxisClient assignments={assignments} />
         <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
           <span className="text-xs text-gray-400">6 מטלות · 3 שלבים כל אחת</span>
           <Link
@@ -105,18 +138,18 @@ export default function ParticipantDashboard() {
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-3">
-        <Link href="/participant/insights">
+        <Link href="/participant/portfolio">
           <Card className="text-center hover:shadow-md transition-shadow cursor-pointer h-full">
-            <div className="text-2xl font-bold text-indigo-600 mb-1">0</div>
-            <div className="text-xs text-gray-500">תובנות שנשמרו</div>
+            <div className="text-2xl font-bold text-indigo-600 mb-1">{unlockedCount}</div>
+            <div className="text-xs text-gray-500">מטלות פתוחות</div>
           </Card>
         </Link>
         <Link href="/participant/assignments">
           <Card className="text-center hover:shadow-md transition-shadow cursor-pointer h-full">
             <div className="text-2xl font-bold text-gray-700 mb-1">
-              {unlockedCount}
+              {assignments.length - unlockedCount}
             </div>
-            <div className="text-xs text-gray-500">מטלות זמינות</div>
+            <div className="text-xs text-gray-500">מטלות נעולות</div>
           </Card>
         </Link>
       </div>

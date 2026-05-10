@@ -17,7 +17,7 @@ export default function LoginPage() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -28,7 +28,14 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/participant");
+    // Route based on user role
+    const { data: userData } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", authData.user.id)
+      .single();
+
+    router.push(userData?.role === "admin" ? "/admin" : "/participant");
     router.refresh();
   }
 
