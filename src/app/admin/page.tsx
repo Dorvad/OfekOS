@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import AdminTabNav, { type AdminTab } from "@/features/admin/AdminTabNav";
 import OverviewTab from "@/features/admin/tabs/OverviewTab";
 import ParticipantsTab from "@/features/admin/tabs/ParticipantsTab";
@@ -60,6 +61,23 @@ export default function AdminPage() {
 
   useEffect(() => {
     reload().then(() => setHydrated(true));
+  }, [reload]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("admin-dashboard-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "users" }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "cohorts" }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "resources" }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "assignments" }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "participant_assignments" }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "prepare_data" }, reload)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [reload]);
 
   if (!hydrated) {

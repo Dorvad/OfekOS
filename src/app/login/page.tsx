@@ -28,8 +28,19 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/participant");
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      setError("הכניסה הצליחה אך הסשן לא נשמר בדפדפן. נסה לרענן ולהתחבר שוב.");
+      setLoading(false);
+      return;
+    }
+
+    router.replace("/participant");
     router.refresh();
+
+    window.setTimeout(() => {
+      window.location.assign("/participant");
+    }, 700);
   }
 
   return (

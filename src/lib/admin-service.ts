@@ -172,6 +172,24 @@ export async function addResource(meta: NewAdminResource): Promise<AdminResource
   };
 }
 
+export async function uploadResourceFile(file: File, sessionNumber: number): Promise<AdminResource> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("sessionNumber", String(sessionNumber));
+
+  const res = await fetch("/api/admin/upload-resource", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error ?? "Upload failed");
+  }
+
+  return res.json();
+}
+
 export async function deleteResource(id: string): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase.from("resources").delete().eq("id", id);

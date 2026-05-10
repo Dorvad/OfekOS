@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import type { Assignment, AssignmentStatus } from "@/lib/types";
 import {
   getAssignmentStatus,
@@ -9,15 +10,33 @@ import {
 import AssignmentCard from "./AssignmentCard";
 import ProgramAxis from "./ProgramAxis";
 import Card from "@/components/ui/Card";
+import { createClient } from "@/lib/supabase/client";
 
 interface AssignmentListClientProps {
   assignments: Assignment[];
 }
 
 export default function AssignmentListClient({ assignments }: AssignmentListClientProps) {
+  const router = useRouter();
   const [statuses, setStatuses] = useState<Record<string, AssignmentStatus>>({});
   const [phaseIndices, setPhaseIndices] = useState<Record<string, number>>({});
   const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("participant-assignment-locks")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "assignments" },
+        () => { router.refresh(); }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [router]);
 
   useEffect(() => {
     const s: Record<string, AssignmentStatus> = {};
