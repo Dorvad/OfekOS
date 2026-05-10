@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { MOCK_USER, MOCK_PROGRAM } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/client";
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -112,9 +113,17 @@ function NavIcon({ navKey, active }: { navKey: string; active: boolean }) {
 
 export default function ParticipantShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const activeKey = getActiveKey(pathname);
   const firstName = MOCK_USER.name.split(" ")[0];
   const initials = MOCK_USER.avatarInitials;
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.replace("/login");
+    router.refresh();
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -154,6 +163,13 @@ export default function ParticipantShell({ children }: { children: React.ReactNo
 
           {/* User avatar */}
           <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="hidden sm:inline-flex items-center rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+            >
+              Log out
+            </button>
             <span className="hidden sm:block text-xs text-gray-500">{firstName}</span>
             <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
               {initials}
@@ -169,7 +185,7 @@ export default function ParticipantShell({ children }: { children: React.ReactNo
 
       {/* ── Mobile bottom tab bar ── */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-100 shadow-[0_-1px_0_0_#f3f4f6]">
-        <div className="grid grid-cols-5 h-16 max-w-lg mx-auto">
+        <div className="grid grid-cols-6 h-16 max-w-lg mx-auto">
           {NAV.map((item) => {
             const isActive = activeKey === item.key;
             return (
@@ -186,6 +202,18 @@ export default function ParticipantShell({ children }: { children: React.ReactNo
               </Link>
             );
           })}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex flex-col items-center justify-center gap-0.5 text-gray-400 transition-colors hover:text-red-500"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            <span className="text-[10px] font-medium leading-none">יציאה</span>
+          </button>
         </div>
       </nav>
     </div>

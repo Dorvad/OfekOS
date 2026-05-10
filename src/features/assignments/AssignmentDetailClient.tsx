@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import type { Assignment, AssignmentStatus } from "@/lib/types";
 import {
   getAssignmentStatus,
@@ -61,12 +62,29 @@ const EMPTY_CLOSING: ClosingData = { insight: "", action: "", question: "" };
 interface AssignmentDetailClientProps { assignment: Assignment; }
 
 export default function AssignmentDetailClient({ assignment }: AssignmentDetailClientProps) {
+  const router = useRouter();
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [status, setStatus]         = useState<AssignmentStatus>("available");
   const [closing, setClosing]       = useState<ClosingData>(EMPTY_CLOSING);
   const [showAchievement, setShowAchievement] = useState(false);
   const [hydrated, setHydrated]     = useState(false);
   const userIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`assignment-${assignment.id}-lock`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "assignments", filter: `id=eq.${assignment.id}` },
+        () => { router.refresh(); }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [assignment.id, router]);
 
   useEffect(() => {
     const savedStatus  = getAssignmentStatus(assignment.id);
