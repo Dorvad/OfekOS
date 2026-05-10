@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import AssignmentListClient from "@/features/assignments/AssignmentListClient";
 import type { Assignment } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function AssignmentsPage() {
   const supabase = await createClient();
   const { data: dbAssignments } = await supabase
