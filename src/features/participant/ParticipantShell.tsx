@@ -33,16 +33,17 @@ function TargetIcon({ active }: { active: boolean }) {
   );
 }
 
-function LightbulbIcon({ active }: { active: boolean }) {
+function BriefcaseIcon({ active }: { active: boolean }) {
   return active ? (
     <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-      <path d="M12 .75a8.25 8.25 0 00-4.135 15.39c.686.398 1.115 1.008 1.134 1.623a.75.75 0 00.577.706c.352.083.71.148 1.074.195.323.041.6-.218.6-.544v-4.661a6.714 6.714 0 01-.937-.171.75.75 0 11.374-1.453 5.261 5.261 0 002.626 0 .75.75 0 11.374 1.452 6.712 6.712 0 01-.937.172v4.66c0 .327.277.586.6.545.364-.047.722-.112 1.074-.195a.75.75 0 00.577-.706c.02-.615.448-1.225 1.134-1.623A8.25 8.25 0 0012 .75z" />
-      <path fillRule="evenodd" d="M9.013 19.9a.75.75 0 01.877-.597 11.319 11.319 0 004.22 0 .75.75 0 11.28 1.473 12.819 12.819 0 01-4.78 0 .75.75 0 01-.597-.876zM9.754 22.344a.75.75 0 01.824-.668 13.682 13.682 0 002.844 0 .75.75 0 11.156 1.492 15.156 15.156 0 01-3.156 0 .75.75 0 01-.668-.824z" clipRule="evenodd" />
+      <path fillRule="evenodd" d="M7.5 5.25a3 3 0 013-3h3a3 3 0 013 3v.205c.933.085 1.857.197 2.774.334 1.454.218 2.476 1.483 2.476 2.917v3.033c0 1.211-.734 2.352-1.936 2.752A24.726 24.726 0 0112 15.75c-2.73 0-5.357-.442-7.814-1.259-1.202-.4-1.936-1.541-1.936-2.752V8.706c0-1.434 1.022-2.7 2.476-2.917A48.814 48.814 0 017.5 5.455V5.25zm7.5 0v.09a49.488 49.488 0 00-6 0v-.09a1.5 1.5 0 011.5-1.5h3a1.5 1.5 0 011.5 1.5zm-3 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clipRule="evenodd" />
+      <path d="M3 18.4v-2.796a4.3 4.3 0 00.713.31A26.226 26.226 0 0012 17.25c2.892 0 5.68-.468 8.287-1.335.252-.084.49-.189.713-.311V18.4c0 1.452-1.047 2.728-2.523 2.923-2.12.282-4.282.427-6.477.427a49.19 49.19 0 01-6.477-.427C4.047 21.128 3 19.852 3 18.4z" />
     </svg>
   ) : (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-      <line x1="9" y1="18" x2="15" y2="18" /><line x1="10" y1="22" x2="14" y2="22" />
-      <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" />
+      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+      <line x1="12" y1="12" x2="12" y2="12.01" />
     </svg>
   );
 }
@@ -82,17 +83,18 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: "/participant",             label: "בית",     key: "home"        },
-  { href: "/participant/assignments", label: "מטלות",   key: "assignments" },
-  { href: "/participant/insights",    label: "תובנות",  key: "insights"    },
-  { href: "/participant/prepare",     label: "הכנה",    key: "prepare"     },
-  { href: "/participant/resources",   label: "משאבים",  key: "resources"   },
+  { href: "/participant",              label: "בית",     key: "home"        },
+  { href: "/participant/assignments",  label: "מטלות",   key: "assignments" },
+  { href: "/participant/portfolio",    label: "תיק",     key: "portfolio"   },
+  { href: "/participant/prepare",      label: "הכנה",    key: "prepare"     },
+  { href: "/participant/resources",    label: "משאבים",  key: "resources"   },
 ];
 
 function getActiveKey(pathname: string): string {
   if (pathname === "/participant") return "home";
   if (pathname.startsWith("/participant/assignments")) return "assignments";
-  if (pathname.startsWith("/participant/insights")) return "insights";
+  if (pathname.startsWith("/participant/portfolio")) return "portfolio";
+  if (pathname.startsWith("/participant/insights")) return "portfolio";
   if (pathname.startsWith("/participant/prepare")) return "prepare";
   if (pathname.startsWith("/participant/resources")) return "resources";
   return "home";
@@ -101,7 +103,7 @@ function getActiveKey(pathname: string): string {
 function NavIcon({ navKey, active }: { navKey: string; active: boolean }) {
   if (navKey === "home")        return <HomeIcon active={active} />;
   if (navKey === "assignments") return <TargetIcon active={active} />;
-  if (navKey === "insights")    return <LightbulbIcon active={active} />;
+  if (navKey === "portfolio")   return <BriefcaseIcon active={active} />;
   if (navKey === "prepare")     return <ClipboardIcon active={active} />;
   return <FolderIcon active={active} />;
 }

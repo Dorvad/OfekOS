@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
 import Card from "@/components/ui/Card";
 import type { Participant, Submission } from "@/lib/types";
 import { MOCK_ASSIGNMENTS } from "@/lib/mock-data";
 import type { AdminTab } from "../AdminTabNav";
+import { createClient } from "@/lib/supabase/client";
 
 const ACCENT_COLOR: Record<string, string> = {
   amber:   "bg-amber-400",
@@ -55,6 +57,7 @@ interface Props {
   lockStates: Record<string, boolean>;
   cohortCount: number;
   onNavigate: (tab: AdminTab) => void;
+  onReload: () => void;
 }
 
 export default function OverviewTab({
@@ -63,7 +66,20 @@ export default function OverviewTab({
   lockStates,
   cohortCount,
   onNavigate,
+  onReload,
 }: Props) {
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("overview-pa-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "participant_assignments" },
+        () => { onReload(); }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [onReload]);
   const openCount = Object.values(lockStates).filter(Boolean).length;
   const totalProgress = participants.reduce((s, p) => s + p.progress, 0);
   const avgCompletion = participants.length
@@ -97,7 +113,13 @@ export default function OverviewTab({
         <div className="lg:col-span-2">
           <Card padding={false}>
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="font-semibold text-gray-900 text-sm">מטריצת השלמה</h2>
+              <div className="flex items-center gap-2">
+                <h2 className="font-semibold text-gray-900 text-sm">מטריצת השלמה</h2>
+                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                  עדכון חי
+                </span>
+              </div>
               <div className="flex items-center gap-3 text-xs text-gray-400">
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-gray-200 inline-block" />לא התחיל</span>
                 <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" />בתהליך</span>

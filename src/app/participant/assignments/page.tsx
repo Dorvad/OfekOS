@@ -1,7 +1,25 @@
 import { MOCK_ASSIGNMENTS } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
 import AssignmentListClient from "@/features/assignments/AssignmentListClient";
+import type { Assignment } from "@/lib/types";
 
-export default function AssignmentsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AssignmentsPage() {
+  const supabase = await createClient();
+  const { data: dbAssignments } = await supabase
+    .from("assignments")
+    .select("id, is_unlocked");
+
+  const lockMap = Object.fromEntries(
+    (dbAssignments ?? []).map((a) => [a.id, a.is_unlocked])
+  );
+
+  const assignments: Assignment[] = MOCK_ASSIGNMENTS.map((a) => ({
+    ...a,
+    isUnlocked: lockMap[a.id] !== undefined ? lockMap[a.id] : a.isUnlocked,
+  }));
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
       <div className="mb-6">
@@ -10,7 +28,7 @@ export default function AssignmentsPage() {
           שש מטלות לאורך התוכנית — כל אחת עם חוויה ייחודית
         </p>
       </div>
-      <AssignmentListClient assignments={MOCK_ASSIGNMENTS} />
+      <AssignmentListClient assignments={assignments} />
     </div>
   );
 }

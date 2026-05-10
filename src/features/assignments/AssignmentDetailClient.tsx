@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import type { Assignment, AssignmentStatus } from "@/lib/types";
 import {
   getAssignmentStatus,
@@ -14,6 +14,7 @@ import {
   markAssignmentAchieved,
   isAssignmentAchieved,
 } from "@/lib/assignment-storage";
+import { createClient } from "@/lib/supabase/client";
 import PhaseTracker from "./PhaseTracker";
 import AchievementBadge from "./AchievementBadge";
 import Card from "@/components/ui/Card";
@@ -65,6 +66,7 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
   const [closing, setClosing]       = useState<ClosingData>(EMPTY_CLOSING);
   const [showAchievement, setShowAchievement] = useState(false);
   const [hydrated, setHydrated]     = useState(false);
+  const userIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const savedStatus  = getAssignmentStatus(assignment.id);
@@ -87,8 +89,68 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
       setAssignmentStatus(assignment.id, "briefing");
       setStatus("briefing");
     }
-    setHydrated(true);
+
+    // Sync from Supabase
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setHydrated(true); return; }
+      userIdRef.current = user.id;
+
+      const { data: row } = await supabase
+        .from("participant_assignments")
+        .select("status, current_phase, insight, closing_action, closing_question")
+        .eq("user_id", user.id)
+        .eq("assignment_id", assignment.id)
+        .single();
+
+      if (row) {
+        if (row.status && row.status !== "locked") {
+          setStatus(row.status as AssignmentStatus);
+          setAssignmentStatus(assignment.id, row.status as AssignmentStatus);
+        }
+        if (row.current_phase) {
+          const phaseIdx = Math.max(0, assignment.phases.findIndex((p) => p.id === row.current_phase));
+          setPhaseIndex(phaseIdx);
+          setAssignmentPhase(assignment.id, row.current_phase);
+        }
+        if (row.insight || row.closing_action || row.closing_question) {
+          const dbClosing: ClosingData = {
+            insight: row.insight ?? "",
+            action: row.closing_action ?? "",
+            question: row.closing_question ?? "",
+          };
+          setClosing(dbClosing);
+          setAssignmentData(assignment.id + ":closing", dbClosing);
+        }
+      }
+
+      setHydrated(true);
+    })();
   }, [assignment.id, assignment.phases]);
+
+  async function syncStatus(userId: string, newStatus: AssignmentStatus, phase: string) {
+    const supabase = createClient();
+    await supabase.from("participant_assignments").upsert({
+      user_id: userId,
+      assignment_id: assignment.id,
+      status: newStatus,
+      current_phase: phase,
+    }, { onConflict: "user_id,assignment_id" });
+  }
+
+  async function syncToSupabase(userId: string, closingData: ClosingData, currentStatus: AssignmentStatus) {
+    const supabase = createClient();
+    await supabase.from("participant_assignments").upsert({
+      user_id: userId,
+      assignment_id: assignment.id,
+      status: currentStatus,
+      insight: closingData.insight,
+      closing_action: closingData.action,
+      closing_question: closingData.question,
+      achieved_at: new Date().toISOString(),
+    }, { onConflict: "user_id,assignment_id" });
+  }
 
   function advancePhase() {
     const next = Math.min(phaseIndex + 1, assignment.phases.length - 1);
@@ -98,6 +160,9 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
     const newStatus = deriveStatus(next);
     setAssignmentStatus(assignment.id, newStatus);
     setStatus(newStatus);
+    if (userIdRef.current) {
+      syncStatus(userIdRef.current, newStatus, nextPhase.id).catch(() => {});
+    }
   }
 
   function deriveStatus(idx: number): AssignmentStatus {
@@ -122,6 +187,9 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
       markAssignmentAchieved(assignment.id);
       setShowAchievement(true);
     }
+    if (userIdRef.current) {
+      syncToSupabase(userIdRef.current, closing, "submitted").catch(() => {});
+    }
   }
 
   const ToolComponent = TOOL_MAP[assignment.id];
@@ -132,14 +200,7 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
 
   if (!hydrated) return <div className="h-64 bg-gray-100 rounded-2xl animate-pulse mt-6" />;
 
-  const adminOverride =
-    typeof window !== "undefined"
-      ? localStorage.getItem(`ofekos:admin:assignment:${assignment.id}:unlocked`)
-      : null;
-  const isUnlocked =
-    adminOverride !== null ? adminOverride === "true" : assignment.isUnlocked;
-
-  if (!isUnlocked) {
+  if (!assignment.isUnlocked) {
     return (
       <Card className="text-center py-12">
         <div className="text-3xl mb-3">🔒</div>

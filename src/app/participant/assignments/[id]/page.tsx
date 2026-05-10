@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MOCK_ASSIGNMENTS } from "@/lib/mock-data";
+import { createClient } from "@/lib/supabase/server";
 import AssignmentDetailClient from "@/features/assignments/AssignmentDetailClient";
 
-export function generateStaticParams() {
-  return MOCK_ASSIGNMENTS.map((a) => ({ id: a.id }));
-}
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -22,12 +21,23 @@ const accentText: Record<string, string> = {
 
 export default async function AssignmentDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const assignment = MOCK_ASSIGNMENTS.find((a) => a.id === id);
-  if (!assignment) notFound();
+  const mockAssignment = MOCK_ASSIGNMENTS.find((a) => a.id === id);
+  if (!mockAssignment) notFound();
+
+  const supabase = await createClient();
+  const { data: dbAssignment } = await supabase
+    .from("assignments")
+    .select("is_unlocked")
+    .eq("id", id)
+    .single();
+
+  const assignment = {
+    ...mockAssignment,
+    isUnlocked: dbAssignment ? dbAssignment.is_unlocked : mockAssignment.isUnlocked,
+  };
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-5">
-      {/* Back nav */}
       <Link
         href="/participant/assignments"
         className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 mb-5 transition-colors"
@@ -38,7 +48,6 @@ export default async function AssignmentDetailPage({ params }: PageProps) {
         חזרה למטלות
       </Link>
 
-      {/* Page heading */}
       <div className="mb-5">
         <span className={`text-xs font-semibold uppercase tracking-wide ${accentText[assignment.accentColor]}`}>
           מפגש {assignment.sessionNumber}

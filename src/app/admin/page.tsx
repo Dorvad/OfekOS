@@ -22,6 +22,7 @@ import type { Participant, Cohort, AdminResource, AssignmentCompletionStat, Subm
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [hydrated, setHydrated] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
@@ -31,19 +32,34 @@ export default function AdminPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [prepareStats, setPrepareStats] = useState({ completed: 0, total: 0 });
 
-  const reload = useCallback(() => {
-    setParticipants(getParticipants());
-    setCohorts(getCohorts());
-    setResources(getResources());
-    setLockStates(getAssignmentLockStates());
-    setCompletionStats(getCompletionStats());
-    setSubmissions(getSubmissions());
-    setPrepareStats(getPrepareStats());
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [p, c, r, ls, cs, s, ps] = await Promise.all([
+        getParticipants(),
+        getCohorts(),
+        getResources(),
+        getAssignmentLockStates(),
+        getCompletionStats(),
+        getSubmissions(),
+        getPrepareStats(),
+      ]);
+      setParticipants(p);
+      setCohorts(c);
+      setResources(r);
+      setLockStates(ls);
+      setCompletionStats(cs);
+      setSubmissions(s);
+      setPrepareStats(ps);
+    } catch (err) {
+      console.error("reload error", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    reload();
-    setHydrated(true);
+    reload().then(() => setHydrated(true));
   }, [reload]);
 
   if (!hydrated) {
@@ -71,8 +87,8 @@ export default function AdminPage() {
             <span className="text-gray-200">|</span>
             <h1 className="text-sm font-bold text-gray-900">ניהול מערכת</h1>
           </div>
-          <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">
-            Admin
+          <span className={`px-2.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full transition-opacity ${loading ? "opacity-50" : "opacity-100"}`}>
+            {loading ? "..." : "Admin"}
           </span>
         </div>
       </div>
@@ -89,27 +105,28 @@ export default function AdminPage() {
             lockStates={lockStates}
             cohortCount={cohorts.length}
             onNavigate={setActiveTab}
+            onReload={reload}
           />
         )}
         {activeTab === "participants" && (
           <ParticipantsTab
             participants={participants}
             cohorts={cohorts}
-            onDataChange={reload}
+            onDataChange={() => { reload(); }}
           />
         )}
         {activeTab === "cohorts" && (
           <CohortsTab
             participants={participants}
             cohorts={cohorts}
-            onDataChange={reload}
+            onDataChange={() => { reload(); }}
           />
         )}
         {activeTab === "content" && (
           <ContentTab
             lockStates={lockStates}
             resources={resources}
-            onDataChange={reload}
+            onDataChange={() => { reload(); }}
           />
         )}
         {activeTab === "analytics" && (
@@ -119,6 +136,7 @@ export default function AdminPage() {
             prepareStats={prepareStats}
             cohorts={cohorts}
             lockStates={lockStates}
+            onReload={reload}
           />
         )}
       </main>

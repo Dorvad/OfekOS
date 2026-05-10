@@ -57,35 +57,35 @@ export default function CohortsTab({ participants, cohorts, onDataChange }: Prop
     setNameInput(cohort.name);
   }
 
-  function commitRename() {
+  async function commitRename() {
     if (editingName && nameInput.trim()) {
-      renameCohort(editingName, nameInput.trim());
+      await renameCohort(editingName, nameInput.trim());
       onDataChange();
     }
     setEditingName(null);
   }
 
-  function handleCreateCohort() {
+  async function handleCreateCohort() {
     if (!newCohortInput.trim()) return;
-    createCohort(newCohortInput.trim());
+    await createCohort(newCohortInput.trim());
     setNewCohortInput("");
     setShowNewCohort(false);
     onDataChange();
   }
 
-  function handleDeleteCohort(id: string) {
+  async function handleDeleteCohort(id: string) {
     if (!confirm("למחוק את הקבוצה? המשתתפים יועברו לקטגוריית 'ללא קבוצה'.")) return;
-    deleteCohort(id);
+    await deleteCohort(id);
     onDataChange();
   }
 
-  function handleRemoveMember(userId: string) {
-    updateParticipantCohort(userId, null);
+  async function handleRemoveMember(userId: string) {
+    await updateParticipantCohort(userId, null);
     onDataChange();
   }
 
-  function handleAssignToCohort(userId: string, cohortId: string) {
-    updateParticipantCohort(userId, cohortId);
+  async function handleAssignToCohort(userId: string, cohortId: string) {
+    await updateParticipantCohort(userId, cohortId);
     onDataChange();
   }
 

@@ -5,7 +5,6 @@ import type {
   Task,
   WorkbookSection,
   PracticeScenario,
-  Resource,
   Participant,
   Program,
   WorkbookEntry,
@@ -23,9 +22,9 @@ import type {
 export const ROLES: RoleConfig[] = [
   {
     id: "participant",
-    label: "Participant",
+    label: "משתתף/ת",
     description:
-      "המסע האישי שלך — מטלות, תובנות, הכנה למפגשים, וחומרי למידה.",
+      "המסע האישי שלך — מטלות, תיק המנהל, הכנה למפגשים, וחומרי למידה.",
     href: "/participant",
     color: "text-indigo-700",
     bgColor: "bg-indigo-50",
@@ -34,9 +33,9 @@ export const ROLES: RoleConfig[] = [
   },
   {
     id: "admin",
-    label: "Admin",
+    label: "מנהל/ת תוכנית",
     description:
-      "Configure programs, manage users, and access full operational analytics.",
+      "ניהול תוכן, משתתפים, נעילת מטלות וצפייה בנתוני השלמה.",
     href: "/admin",
     color: "text-slate-700",
     bgColor: "bg-slate-100",
@@ -59,7 +58,7 @@ export const MOCK_USER: User = {
 
 export const MOCK_PROGRAM: Program = {
   id: "prog-1",
-  name: "Leadership Development Cohort — Spring 2025",
+  name: "תוכנית אופק — פיתוח מנהלים בכירים",
   startDate: "2025-03-01",
   endDate: "2025-08-31",
   cohortSize: 24,
@@ -74,46 +73,54 @@ export const MOCK_PROGRAM: Program = {
 export const MOCK_SESSIONS: Session[] = [
   {
     id: "s1",
-    title: "Foundations of Management",
+    title: "יסודות המנהל החדש",
     date: "2025-03-15",
     status: "completed",
     description:
-      "Establishing your management identity and defining your leadership style.",
+      "גיבוש זהות ניהולית וכיוון אישי — המעבר מביצוע להובלה.",
     durationMinutes: 120,
   },
   {
     id: "s2",
-    title: "Giving Effective Feedback",
+    title: "מתן משוב",
     date: "2025-04-10",
     status: "completed",
     description:
-      "Frameworks for constructive, timely, and actionable feedback conversations.",
+      "כלים לשיחות משוב אפקטיביות — ספציפיות, ממוקדות ומקדמות.",
     durationMinutes: 90,
   },
   {
     id: "s3",
-    title: "Difficult Conversations",
+    title: "שיחות עם הצוות",
     date: "2025-05-08",
     status: "active",
     description:
-      "Navigating complex interpersonal situations with clarity and care.",
+      "ניהול שיחות קשות ומיפוי מערכת הצוות כמנוע אנרגיה.",
     durationMinutes: 120,
   },
   {
     id: "s4",
-    title: "Delegation & Empowerment",
+    title: "ניהול כלפי מעלה",
     date: "2025-06-12",
     status: "upcoming",
     description:
-      "Building trust and accountability through intentional delegation.",
+      "השפעה, הנעה וקידום נושאים מול הממונה מתוך ראייה אסטרטגית.",
     durationMinutes: 90,
   },
   {
     id: "s5",
-    title: "Strategic Thinking for Managers",
+    title: "ניהול זמן ועדיפויות",
     date: "2025-07-10",
     status: "upcoming",
-    description: "Shifting from operational to strategic mindset.",
+    description: "עבודה תחת עומס — תיעדוף, האצלה ושמירה על הקצב הניהולי.",
+    durationMinutes: 120,
+  },
+  {
+    id: "s6",
+    title: "הובלת שינוי",
+    date: "2025-08-07",
+    status: "upcoming",
+    description: "אבחון התנגדות לשינוי ובניית שיחה שמכילה ומקדמת.",
     durationMinutes: 120,
   },
 ];
@@ -478,94 +485,6 @@ export const MOCK_PRACTICE_SCENARIOS: PracticeScenario[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Resources
-// ---------------------------------------------------------------------------
-
-export const MOCK_RESOURCES: Resource[] = [
-  {
-    id: "r1",
-    title: "From Expert to Manager: The Identity Shift",
-    type: "link",
-    sessionId: "s1",
-    description:
-      "A Harvard Business Review article on the psychological and practical challenges of transitioning from individual contributor to first-time manager.",
-    url: "#",
-  },
-  {
-    id: "r2",
-    title: "Feedback Conversation Template (SBI Model)",
-    type: "template",
-    sessionId: "s2",
-    description:
-      "A one-page template for planning a feedback conversation using the Situation–Behaviour–Impact framework. Print or fill in digitally before a real conversation.",
-    url: "#",
-  },
-  {
-    id: "r3",
-    title: "Positive Feedback: Why It Matters More Than You Think",
-    type: "link",
-    sessionId: "s2",
-    description:
-      "Research-backed article on the outsized impact of specific, timely positive feedback on team performance and psychological safety.",
-    url: "#",
-  },
-  {
-    id: "r4",
-    title: "PREP Framework: Difficult Conversations Guide",
-    type: "file",
-    sessionId: "s3",
-    description:
-      "A two-page reference guide explaining the PREP framework (Prepare, Relate, Explore, Plan) for navigating difficult management conversations.",
-    url: "#",
-  },
-  {
-    id: "r5",
-    title: "Difficult Conversations Prep Sheet",
-    type: "template",
-    sessionId: "s3",
-    description:
-      "A structured template to complete before entering a difficult conversation. Covers your goal, key points, anticipated reactions, and your plan for follow-up.",
-    url: "#",
-  },
-  {
-    id: "r6",
-    title: "Delegation Decision Matrix",
-    type: "template",
-    sessionId: "s4",
-    description:
-      "A practical matrix to help you decide what to delegate, to whom, and at what level of autonomy — based on task complexity and team member readiness.",
-    url: "#",
-  },
-  {
-    id: "r7",
-    title: "Strategic Thinking Frameworks for Managers",
-    type: "file",
-    sessionId: "s5",
-    description:
-      "An overview of three practical frameworks for developing strategic thinking: Horizon Planning, Stakeholder Mapping, and the Strategy-to-Team Translation model.",
-    url: "#",
-  },
-  {
-    id: "r8",
-    title: "The Management Fundamentals Reading List",
-    type: "link",
-    sessionId: null,
-    description:
-      "A curated list of 10 essential books for new and developing managers, with a one-paragraph summary of each and what it is best read for.",
-    url: "#",
-  },
-  {
-    id: "r9",
-    title: "Program Overview and Session Guide",
-    type: "file",
-    sessionId: null,
-    description:
-      "The full program overview including session dates, learning objectives, workbook structure, and what to expect from the AI practice space.",
-    url: "#",
-  },
-];
-
-// ---------------------------------------------------------------------------
 // Participants (used by manager / facilitator / admin dashboards)
 // ---------------------------------------------------------------------------
 
@@ -730,7 +649,7 @@ export const MOCK_WORKBOOK_ENTRIES: WorkbookEntry[] = [
   {
     id: "w1",
     sessionId: "s1",
-    sessionTitle: "Foundations of Management",
+    sessionTitle: "יסודות המנהל החדש",
     createdAt: "2025-03-15",
     updatedAt: "2025-03-18",
     isShared: false,
@@ -738,7 +657,7 @@ export const MOCK_WORKBOOK_ENTRIES: WorkbookEntry[] = [
   {
     id: "w2",
     sessionId: "s2",
-    sessionTitle: "Giving Effective Feedback",
+    sessionTitle: "מתן משוב",
     createdAt: "2025-04-10",
     updatedAt: "2025-04-14",
     isShared: true,
