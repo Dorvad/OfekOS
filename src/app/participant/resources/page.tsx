@@ -1,6 +1,4 @@
-import { MOCK_RESOURCES, MOCK_SESSIONS } from "@/lib/mock-data";
 import ParticipantPageHeader from "@/features/participant/ParticipantPageHeader";
-import ResourcesList from "@/features/resources/ResourcesList";
 import ProgramFilesClient from "@/features/resources/ProgramFilesClient";
 
 export default function ResourcesPage() {
@@ -17,7 +15,6 @@ export default function ResourcesPage() {
         <ProgramFilesClient />
       </section>
 
-      <ResourcesList resources={MOCK_RESOURCES} sessions={MOCK_SESSIONS} />
     </div>
   );
 }

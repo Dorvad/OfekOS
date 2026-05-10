@@ -89,7 +89,6 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
   // File upload state
   const [upload, setUpload] = useState<UploadState>(EMPTY_UPLOAD);
   const [uploadSession, setUploadSession] = useState("1");
-  const [uploadVisible, setUploadVisible] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -288,16 +287,6 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
                       <option key={n} value={n}>מפגש {n}</option>
                     ))}
                   </select>
-
-                  <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={uploadVisible}
-                      onChange={(e) => setUploadVisible(e.target.checked)}
-                      className="w-3.5 h-3.5 accent-indigo-600"
-                    />
-                    גלוי למשתתפים
-                  </label>
                 </div>
 
                 <button

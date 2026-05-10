@@ -5,7 +5,6 @@ import type {
   Task,
   WorkbookSection,
   PracticeScenario,
-  Resource,
   Participant,
   Program,
   WorkbookEntry,
@@ -482,94 +481,6 @@ export const MOCK_PRACTICE_SCENARIOS: PracticeScenario[] = [
       "Look for what they used to find motivating and see if it's still accessible",
     ],
     agentId: null,
-  },
-];
-
-// ---------------------------------------------------------------------------
-// Resources
-// ---------------------------------------------------------------------------
-
-export const MOCK_RESOURCES: Resource[] = [
-  {
-    id: "r1",
-    title: "From Expert to Manager: The Identity Shift",
-    type: "link",
-    sessionId: "s1",
-    description:
-      "A Harvard Business Review article on the psychological and practical challenges of transitioning from individual contributor to first-time manager.",
-    url: "#",
-  },
-  {
-    id: "r2",
-    title: "Feedback Conversation Template (SBI Model)",
-    type: "template",
-    sessionId: "s2",
-    description:
-      "A one-page template for planning a feedback conversation using the Situation–Behaviour–Impact framework. Print or fill in digitally before a real conversation.",
-    url: "#",
-  },
-  {
-    id: "r3",
-    title: "Positive Feedback: Why It Matters More Than You Think",
-    type: "link",
-    sessionId: "s2",
-    description:
-      "Research-backed article on the outsized impact of specific, timely positive feedback on team performance and psychological safety.",
-    url: "#",
-  },
-  {
-    id: "r4",
-    title: "PREP Framework: Difficult Conversations Guide",
-    type: "file",
-    sessionId: "s3",
-    description:
-      "A two-page reference guide explaining the PREP framework (Prepare, Relate, Explore, Plan) for navigating difficult management conversations.",
-    url: "#",
-  },
-  {
-    id: "r5",
-    title: "Difficult Conversations Prep Sheet",
-    type: "template",
-    sessionId: "s3",
-    description:
-      "A structured template to complete before entering a difficult conversation. Covers your goal, key points, anticipated reactions, and your plan for follow-up.",
-    url: "#",
-  },
-  {
-    id: "r6",
-    title: "Delegation Decision Matrix",
-    type: "template",
-    sessionId: "s4",
-    description:
-      "A practical matrix to help you decide what to delegate, to whom, and at what level of autonomy — based on task complexity and team member readiness.",
-    url: "#",
-  },
-  {
-    id: "r7",
-    title: "Strategic Thinking Frameworks for Managers",
-    type: "file",
-    sessionId: "s5",
-    description:
-      "An overview of three practical frameworks for developing strategic thinking: Horizon Planning, Stakeholder Mapping, and the Strategy-to-Team Translation model.",
-    url: "#",
-  },
-  {
-    id: "r8",
-    title: "The Management Fundamentals Reading List",
-    type: "link",
-    sessionId: null,
-    description:
-      "A curated list of 10 essential books for new and developing managers, with a one-paragraph summary of each and what it is best read for.",
-    url: "#",
-  },
-  {
-    id: "r9",
-    title: "Program Overview and Session Guide",
-    type: "file",
-    sessionId: null,
-    description:
-      "The full program overview including session dates, learning objectives, workbook structure, and what to expect from the AI practice space.",
-    url: "#",
   },
 ];
 

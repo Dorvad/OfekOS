@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { getResources } from "@/lib/admin-service";
 import type { AdminResource } from "@/lib/types";
 
 const TYPE_ICONS: Record<string, string> = {
@@ -25,26 +26,52 @@ function formatSize(kb: number | null): string {
   return `${kb} KB`;
 }
 
-const STORAGE_KEY = "ofekos:admin:resources";
-
 export default function ProgramFilesClient() {
   const [resources, setResources] = useState<AdminResource[]>([]);
-  const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadResources = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as AdminResource[];
-        setResources(parsed);
-      }
-    } catch {
-      // ignore parse errors
+      const data = await getResources();
+      setResources(data);
+    } catch (err) {
+      console.error("failed to load program resources", err);
+      setResources([]);
+      setError("לא ניתן לטעון כרגע את חומרי התוכנית. כדאי לבדוק הרשאות קריאה לטבלת resources ב-Supabase.");
+    } finally {
+      setLoading(false);
     }
-    setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  useEffect(() => {
+    loadResources();
+  }, [loadResources]);
+
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <p className="text-sm text-gray-400 text-center">טוען חומרי תוכנית...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-2xl border border-red-100 bg-red-50 p-6 text-center shadow-sm">
+        <p className="text-sm text-red-600">{error}</p>
+        <button
+          type="button"
+          onClick={loadResources}
+          className="mt-3 text-xs font-semibold text-red-700 hover:text-red-900"
+        >
+          נסה שוב ←
+        </button>
+      </div>
+    );
+  }
 
   if (resources.length === 0) {
     return (
