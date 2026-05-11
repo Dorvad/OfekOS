@@ -6,7 +6,9 @@ import { createClient } from "@/lib/supabase/client";
 import Card from "@/components/ui/Card";
 import Link from "next/link";
 
-const PREPARE_KEY = "ofekos:prepare:u1:data";
+function prepareKey(userId: string) {
+  return `ofekos:prepare:${userId}:data`;
+}
 
 interface PrepareData {
   insight: string;
@@ -84,16 +86,22 @@ export default function PreparePage() {
     : null;
 
   useEffect(() => {
-    const raw = localStorage.getItem(PREPARE_KEY);
-    if (raw) {
-      try { setData(JSON.parse(raw)); } catch { /* ignore */ }
-    }
-
-    // Sync from Supabase
     (async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (user && nextSessionNumber) {
+      if (!user) { setHydrated(true); return; }
+
+      const key = prepareKey(user.id);
+      setUserId(user.id);
+
+      // Seed from localStorage first for instant display
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        try { setData(JSON.parse(raw)); } catch { /* ignore */ }
+      }
+
+      // Then sync from Supabase (wins on conflict)
+      if (nextSessionNumber) {
         const { data: dbData } = await supabase
           .from("prepare_data")
           .select("insight, dilemma, action, question")
@@ -108,20 +116,19 @@ export default function PreparePage() {
             question: dbData.question ?? "",
           };
           setData(merged);
-          localStorage.setItem(PREPARE_KEY, JSON.stringify(merged));
+          localStorage.setItem(key, JSON.stringify(merged));
         }
-        setUserId(user.id);
       }
       setHydrated(true);
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function handleChange(key: keyof PrepareData, value: string) {
-    const next = { ...data, [key]: value };
+  function handleChange(field: keyof PrepareData, value: string) {
+    const next = { ...data, [field]: value };
     setData(next);
     setSaved(false);
-    localStorage.setItem(PREPARE_KEY, JSON.stringify(next));
+    if (userId) localStorage.setItem(prepareKey(userId), JSON.stringify(next));
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
 
