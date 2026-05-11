@@ -5,6 +5,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import Card from "@/components/ui/Card";
 import ProgramAxisClient from "@/features/assignments/ProgramAxisClient";
 import PrepareReminderClient from "@/features/assignments/PrepareReminderClient";
+import ParticipantRefresher from "@/features/assignments/ParticipantRefresher";
 import type { Assignment } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -68,11 +69,11 @@ export default async function ParticipantDashboard() {
     isUnlocked: lockMap[a.id] !== undefined ? lockMap[a.id] : a.isUnlocked,
   }));
 
-  // Fetch the current user's assignment progress from Supabase
+  // Fetch the current user's assignment progress — use service client to bypass RLS
   const DONE_STATUSES = ["submitted", "achieved"];
   const statusMap: Record<string, string> = {};
   if (user) {
-    const { data: paRows } = await supabase
+    const { data: paRows } = await service
       .from("participant_assignments")
       .select("assignment_id, status")
       .eq("user_id", user.id);
@@ -100,6 +101,7 @@ export default async function ParticipantDashboard() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+      <ParticipantRefresher />
 
       {/* Welcome */}
       <div>

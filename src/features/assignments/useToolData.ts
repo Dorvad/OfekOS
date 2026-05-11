@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getAssignmentData, setAssignmentData } from "@/lib/assignment-storage";
-import { createClient } from "@/lib/supabase/client";
 
 export function useToolData<T extends object>(
   assignmentId: string,
@@ -23,14 +22,11 @@ export function useToolData<T extends object>(
   }, [assignmentId]);
 
   const syncData = useCallback(async (id: string, next: T) => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from("participant_assignments").upsert({
-      user_id: user.id,
-      assignment_id: id,
-      data: next,
-    }, { onConflict: "user_id,assignment_id" });
+    await fetch("/api/participant/sync-assignment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assignmentId: id, data: next }),
+    });
   }, []);
 
   const persist = useCallback((next: T) => {

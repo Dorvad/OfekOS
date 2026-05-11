@@ -1,6 +1,7 @@
 import { MOCK_ASSIGNMENTS } from "@/lib/mock-data";
 import { createServiceClient } from "@/lib/supabase/service";
 import AssignmentListClient from "@/features/assignments/AssignmentListClient";
+import ParticipantRefresher from "@/features/assignments/ParticipantRefresher";
 import type { Assignment } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ export default async function AssignmentsPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
+      <ParticipantRefresher />
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-900">המטלות שלי</h1>
         <p className="text-sm text-gray-400 mt-0.5">
