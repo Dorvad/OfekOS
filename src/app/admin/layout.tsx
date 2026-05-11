@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +10,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!user) redirect("/login");
 
-  const { data } = await supabase
+  const service = createServiceClient();
+  const { data } = await service
     .from("users")
     .select("role")
     .eq("id", user.id)
