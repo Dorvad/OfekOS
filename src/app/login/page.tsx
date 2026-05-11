@@ -1,16 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Tab = "login" | "register";
-type LoginMode = "participant" | "admin";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [tab, setTab] = useState<Tab>("login");
-  const [mode, setMode] = useState<LoginMode>("participant");
 
   // Login fields
   const [email, setEmail] = useState("");
@@ -42,22 +38,15 @@ export default function LoginPage() {
       return;
     }
 
-    // If admin mode forced → go to /admin regardless of role
-    if (mode === "admin") {
-      router.push("/admin");
-      router.refresh();
-      return;
-    }
-
-    // Otherwise route by role from DB
+    // Always check DB role — never bypass
     const { data: userData } = await supabase
       .from("users")
       .select("role")
       .eq("id", authData.user.id)
       .single();
 
-    router.push(userData?.role === "admin" ? "/admin" : "/participant");
-    router.refresh();
+    // Hard navigation so middleware receives the auth cookie cleanly
+    window.location.href = userData?.role === "admin" ? "/admin" : "/participant";
   }
 
   async function handleRegister(e: React.FormEvent) {
@@ -76,9 +65,7 @@ export default function LoginPage() {
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: regEmail,
       password: regPassword,
-      options: {
-        data: { full_name: regName },
-      },
+      options: { data: { full_name: regName } },
     });
 
     if (signUpError) {
@@ -88,11 +75,9 @@ export default function LoginPage() {
     }
 
     if (data.session) {
-      // Email confirmation disabled → logged in immediately
-      router.push("/participant");
-      router.refresh();
+      // Email confirmation disabled — logged in immediately
+      window.location.href = "/participant";
     } else {
-      // Email confirmation required
       setSuccess("נשלח אליך אימייל לאימות החשבון. לאחר האימות תוכל להיכנס.");
       setLoading(false);
     }
@@ -140,33 +125,6 @@ export default function LoginPage() {
             {/* ── LOGIN TAB ── */}
             {tab === "login" && (
               <form onSubmit={handleLogin} className="space-y-4">
-
-                {/* Role toggle */}
-                <div className="flex rounded-xl border border-gray-200 overflow-hidden bg-gray-50 p-0.5 gap-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setMode("participant")}
-                    className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                      mode === "participant"
-                        ? "bg-white text-indigo-700 shadow-sm border border-indigo-100"
-                        : "text-gray-400 hover:text-gray-600"
-                    }`}
-                  >
-                    משתתף
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMode("admin")}
-                    className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                      mode === "admin"
-                        ? "bg-white text-indigo-700 shadow-sm border border-indigo-100"
-                        : "text-gray-400 hover:text-gray-600"
-                    }`}
-                  >
-                    מנהל מערכת
-                  </button>
-                </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">אימייל</label>
                   <input
@@ -206,11 +164,7 @@ export default function LoginPage() {
                   disabled={loading}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold rounded-xl py-2.5 text-sm transition-colors"
                 >
-                  {loading
-                    ? "מתחבר..."
-                    : mode === "admin"
-                    ? "כניסה לניהול ←"
-                    : "כניסה ←"}
+                  {loading ? "מתחבר..." : "כניסה ←"}
                 </button>
               </form>
             )}

@@ -1,12 +1,21 @@
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </div>
-  );
+export const dynamic = "force-dynamic";
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const { data } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (data?.role !== "admin") redirect("/participant");
+
+  return <>{children}</>;
 }
