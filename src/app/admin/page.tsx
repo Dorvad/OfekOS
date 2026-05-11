@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import AdminTabNav, { type AdminTab } from "@/features/admin/AdminTabNav";
 import OverviewTab from "@/features/admin/tabs/OverviewTab";
@@ -111,10 +112,16 @@ export default function AdminPage() {
             <span className="text-gray-200">|</span>
             <h1 className="text-sm font-bold text-gray-700">ניהול מערכת</h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <span className={`px-2.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full transition-opacity ${loading ? "opacity-50" : "opacity-100"}`}>
               {loading ? "..." : (adminName ? `Admin · ${adminName}` : "Admin")}
             </span>
+            <Link
+              href="/participant"
+              className="text-xs text-gray-500 hover:text-indigo-600 transition-colors px-2.5 py-1 rounded-lg hover:bg-indigo-50 font-medium border border-gray-200 hover:border-indigo-200"
+            >
+              צפה כמשתתף
+            </Link>
             <button
               onClick={handleLogout}
               className="text-xs text-gray-400 hover:text-red-500 transition-colors px-2.5 py-1 rounded-lg hover:bg-red-50 font-medium border border-gray-200 hover:border-red-200"
