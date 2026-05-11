@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import type { Assignment, AssignmentStatus } from "@/lib/types";
 import {
@@ -68,7 +68,6 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
   const [closing, setClosing]       = useState<ClosingData>(EMPTY_CLOSING);
   const [showAchievement, setShowAchievement] = useState(false);
   const [hydrated, setHydrated]     = useState(false);
-  const userIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -113,7 +112,6 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setHydrated(true); return; }
-      userIdRef.current = user.id;
 
       const { data: row } = await supabase
         .from("participant_assignments")
@@ -147,27 +145,27 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
     })();
   }, [assignment.id, assignment.phases]);
 
-  async function syncStatus(userId: string, newStatus: AssignmentStatus, phase: string) {
-    const supabase = createClient();
-    await supabase.from("participant_assignments").upsert({
-      user_id: userId,
-      assignment_id: assignment.id,
-      status: newStatus,
-      current_phase: phase,
-    }, { onConflict: "user_id,assignment_id" });
+  async function syncStatus(newStatus: AssignmentStatus, phase: string) {
+    await fetch("/api/participant/sync-assignment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assignmentId: assignment.id, status: newStatus, currentPhase: phase }),
+    }).catch(() => {});
   }
 
-  async function syncToSupabase(userId: string, closingData: ClosingData, currentStatus: AssignmentStatus) {
-    const supabase = createClient();
-    await supabase.from("participant_assignments").upsert({
-      user_id: userId,
-      assignment_id: assignment.id,
-      status: currentStatus,
-      insight: closingData.insight,
-      closing_action: closingData.action,
-      closing_question: closingData.question,
-      achieved_at: new Date().toISOString(),
-    }, { onConflict: "user_id,assignment_id" });
+  async function syncToSupabase(closingData: ClosingData, currentStatus: AssignmentStatus) {
+    await fetch("/api/participant/sync-assignment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        assignmentId: assignment.id,
+        status: currentStatus,
+        insight: closingData.insight,
+        closingAction: closingData.action,
+        closingQuestion: closingData.question,
+        achievedAt: new Date().toISOString(),
+      }),
+    }).catch(() => {});
   }
 
   function advancePhase() {
@@ -178,9 +176,7 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
     const newStatus = deriveStatus(next);
     setAssignmentStatus(assignment.id, newStatus);
     setStatus(newStatus);
-    if (userIdRef.current) {
-      syncStatus(userIdRef.current, newStatus, nextPhase.id).catch(() => {});
-    }
+    syncStatus(newStatus, nextPhase.id).catch(() => {});
   }
 
   function deriveStatus(idx: number): AssignmentStatus {
@@ -205,9 +201,8 @@ export default function AssignmentDetailClient({ assignment }: AssignmentDetailC
       markAssignmentAchieved(assignment.id);
       setShowAchievement(true);
     }
-    if (userIdRef.current) {
-      syncToSupabase(userIdRef.current, closing, "submitted").catch(() => {});
-    }
+    // Save to DB, then refresh so the assignments list and home page reflect the new status
+    syncToSupabase(closing, "submitted").then(() => router.refresh()).catch(() => {});
   }
 
   const ToolComponent = TOOL_MAP[assignment.id];
