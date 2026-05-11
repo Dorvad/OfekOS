@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MOCK_PROGRAM, MOCK_ASSIGNMENTS, MOCK_SESSIONS } from "@/lib/mock-data";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import Card from "@/components/ui/Card";
 import ProgramAxisClient from "@/features/assignments/ProgramAxisClient";
 import PrepareReminderClient from "@/features/assignments/PrepareReminderClient";
@@ -52,8 +53,9 @@ export default async function ParticipantDashboard() {
     }
   }
 
-  // Fetch real lock states from Supabase assignments table
-  const { data: dbAssignments } = await supabase
+  // Fetch real lock states — use service client to bypass RLS on assignments table
+  const service = createServiceClient();
+  const { data: dbAssignments } = await service
     .from("assignments")
     .select("id, is_unlocked");
 

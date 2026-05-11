@@ -1,12 +1,12 @@
 import { MOCK_ASSIGNMENTS } from "@/lib/mock-data";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import AssignmentListClient from "@/features/assignments/AssignmentListClient";
 import type { Assignment } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function AssignmentsPage() {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
   const { data: dbAssignments } = await supabase
     .from("assignments")
     .select("id, is_unlocked");
