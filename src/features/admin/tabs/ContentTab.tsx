@@ -83,7 +83,10 @@ const EMPTY_UPLOAD: UploadState = {
 };
 
 export default function ContentTab({ lockStates, resources, onDataChange }: Props) {
-  const [locks, setLocks] = useState(lockStates);
+  const [savedLocks, setSavedLocks] = useState(lockStates);
+  const [pendingLocks, setPendingLocks] = useState(lockStates);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [form, setForm] = useState<ResourceForm>(EMPTY_FORM);
   const [sessionFilter, setSessionFilter] = useState<string>("all");
 
@@ -94,18 +97,35 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setLocks(lockStates);
+    setSavedLocks(lockStates);
+    setPendingLocks(lockStates);
   }, [lockStates]);
 
-  async function handleToggle(assignmentId: string) {
-    const next = !locks[assignmentId];
-    setLocks((prev) => ({ ...prev, [assignmentId]: next }));
+  const hasChanges = Object.keys(pendingLocks).some(
+    (id) => pendingLocks[id] !== savedLocks[id]
+  );
+
+  function handleToggle(assignmentId: string) {
+    setPendingLocks((prev) => ({ ...prev, [assignmentId]: !prev[assignmentId] }));
+    setSaveError(null);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setSaveError(null);
+    const changed = Object.keys(pendingLocks).filter(
+      (id) => pendingLocks[id] !== savedLocks[id]
+    );
     try {
-      await setAssignmentLocked(assignmentId, next);
+      await Promise.all(changed.map((id) => setAssignmentLocked(id, pendingLocks[id])));
+      setSavedLocks({ ...pendingLocks });
       onDataChange();
     } catch (err) {
-      console.error("failed to update assignment lock", err);
-      setLocks((prev) => ({ ...prev, [assignmentId]: !next }));
+      console.error("failed to save lock states", err);
+      setSaveError("שגיאה בשמירה. נסה שנית.");
+      setPendingLocks({ ...savedLocks });
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -185,7 +205,23 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
 
       {/* ── Assignment locks ── */}
       <div>
-        <h2 className="text-sm font-bold text-gray-700 mb-3">ניהול נעילת מטלות</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-bold text-gray-700">ניהול נעילת מטלות</h2>
+          <div className="flex items-center gap-2">
+            {saveError && (
+              <span className="text-xs text-red-600">{saveError}</span>
+            )}
+            {hasChanges && (
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white transition-colors"
+              >
+                {saving ? "שומר..." : "שמור שינויים ←"}
+              </button>
+            )}
+          </div>
+        </div>
         <Card padding={false}>
           <table className="w-full text-sm">
             <thead>
@@ -199,9 +235,10 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
             </thead>
             <tbody className="divide-y divide-gray-50">
               {MOCK_ASSIGNMENTS.map((a) => {
-                const unlocked = locks[a.id] ?? false;
+                const unlocked = pendingLocks[a.id] ?? false;
+                const changed = pendingLocks[a.id] !== savedLocks[a.id];
                 return (
-                  <tr key={a.id} className="hover:bg-gray-50/50">
+                  <tr key={a.id} className={changed ? "bg-amber-50/50" : "hover:bg-gray-50/50"}>
                     <td className="px-5 py-3 text-xs text-gray-400">{a.sessionNumber}</td>
                     <td className="px-4 py-3">
                       <p className="font-medium text-gray-900">{a.title}</p>
@@ -217,6 +254,7 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
                           : "bg-red-50 text-red-600"
                       }`}>
                         {unlocked ? "🟢 פתוחה" : "🔴 נעולה"}
+                        {changed && <span className="text-gray-400">(לא נשמר)</span>}
                       </span>
                     </td>
                     <td className="px-4 py-3">
