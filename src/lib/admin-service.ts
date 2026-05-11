@@ -115,12 +115,15 @@ export async function deleteCohort(id: string): Promise<void> {
 // ── Assignment lock control ──────────────────────────────────
 
 export async function getAssignmentLockStates(): Promise<Record<string, boolean>> {
-  const supabase = createClient();
-  const { data, error } = await supabase.from("assignments").select("id, is_unlocked");
-  if (error) {
+  try {
+    const res = await fetch("/api/admin/assignments", { cache: "no-store" });
+    if (!res.ok) throw new Error("fetch failed");
+    const data: { id: string; is_unlocked: boolean }[] = await res.json();
+    if (data.length === 0) throw new Error("empty");
+    return Object.fromEntries(data.map((a) => [a.id, a.is_unlocked]));
+  } catch {
     return Object.fromEntries(MOCK_ASSIGNMENTS.map((a) => [a.id, a.isUnlocked]));
   }
-  return Object.fromEntries((data ?? []).map((a) => [a.id, a.is_unlocked]));
 }
 
 export async function setAssignmentLocked(assignmentId: string, unlocked: boolean): Promise<void> {
