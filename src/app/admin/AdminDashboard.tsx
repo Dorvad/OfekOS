@@ -67,6 +67,20 @@ export default function AdminDashboard({ adminName }: Props) {
     reload().then(() => setHydrated(true));
   }, [reload]);
 
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("admin-dashboard-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "users" }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "cohorts" }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "resources" }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "assignments" }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "participant_assignments" }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "prepare_data" }, reload)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [reload]);
+
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();

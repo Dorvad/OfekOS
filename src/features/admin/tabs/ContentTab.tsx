@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Card from "@/components/ui/Card";
 import type { AdminResource } from "@/lib/types";
 import {
   setAssignmentLocked,
   addResource,
   deleteResource,
+  uploadResourceFile,
 } from "@/lib/admin-service";
 import { MOCK_ASSIGNMENTS } from "@/lib/mock-data";
 
@@ -69,7 +70,7 @@ interface UploadState {
   fileName: string;
   fileSizeKb: number;
   fileType: AdminResource["type"];
-  base64: string;
+  file: File | null;
   error: string;
 }
 
@@ -77,7 +78,7 @@ const EMPTY_UPLOAD: UploadState = {
   fileName: "",
   fileSizeKb: 0,
   fileType: "other",
-  base64: "",
+  file: null,
   error: "",
 };
 
@@ -92,10 +93,20 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    setLocks(lockStates);
+  }, [lockStates]);
+
   async function handleToggle(assignmentId: string) {
     const next = !locks[assignmentId];
     setLocks((prev) => ({ ...prev, [assignmentId]: next }));
-    await setAssignmentLocked(assignmentId, next);
+    try {
+      await setAssignmentLocked(assignmentId, next);
+      onDataChange();
+    } catch (err) {
+      console.error("failed to update assignment lock", err);
+      setLocks((prev) => ({ ...prev, [assignmentId]: !next }));
+    }
   }
 
   async function handleAddResource() {
@@ -122,10 +133,10 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
     if (!file) return;
 
     const sizeKb = Math.round(file.size / 1024);
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 10 * 1024 * 1024) {
       setUpload({
         ...EMPTY_UPLOAD,
-        error: "הקובץ גדול מ-5MB. אנא בחר/י קובץ קטן יותר.",
+        error: "הקובץ גדול מ-10MB. אנא בחר/י קובץ קטן יותר.",
       });
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
@@ -134,35 +145,31 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
     const fileType: AdminResource["type"] = EXT_TO_TYPE[ext] ?? "other";
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string;
-      setUpload({
-        fileName: file.name,
-        fileSizeKb: sizeKb,
-        fileType,
-        base64,
-        error: "",
-      });
-    };
-    reader.readAsDataURL(file);
+    setUpload({
+      file,
+      fileName: file.name,
+      fileSizeKb: sizeKb,
+      fileType,
+      error: "",
+    });
   }
 
   async function handleUploadSubmit() {
-    if (!upload.base64 || !upload.fileName) return;
+    if (!upload.file) return;
     setUploading(true);
+    setUpload((prev) => ({ ...prev, error: "" }));
     try {
-      await addResource({
-        name: upload.fileName,
-        sessionNumber: parseInt(uploadSession),
-        type: upload.fileType,
-        url: upload.base64,
-        fileSizeKb: upload.fileSizeKb,
-        description: "",
-      });
+      await uploadResourceFile(upload.file, parseInt(uploadSession));
       setUpload(EMPTY_UPLOAD);
       if (fileInputRef.current) fileInputRef.current.value = "";
       onDataChange();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Upload failed";
+      console.error("failed to upload resource", err);
+      setUpload((prev) => ({
+        ...prev,
+        error: `ההעלאה נכשלה: ${message}`,
+      }));
     } finally {
       setUploading(false);
     }
@@ -244,12 +251,12 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
             {/* File input */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                בחר/י קובץ (עד 5MB — PDF, Word, PowerPoint, תמונה)
+                בחר/י קובץ (עד 10MB — PDF, Word, PowerPoint, תמונה או וידאו)
               </label>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.docx,.doc,.pptx,.ppt,.png,.jpg,.jpeg"
+                accept=".pdf,.docx,.doc,.pptx,.ppt,.png,.jpg,.jpeg,.mp4,.mov,.webm"
                 onChange={handleFileSelect}
                 className="block w-full text-sm text-gray-700 file:mr-0 file:ml-3 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
               />
@@ -291,7 +298,7 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
 
                 <button
                   onClick={handleUploadSubmit}
-                  disabled={uploading}
+                  disabled={uploading || !upload.file}
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white text-xs font-semibold rounded-xl transition-colors"
                 >
                   {uploading ? "שומר..." : "שמור קובץ ←"}

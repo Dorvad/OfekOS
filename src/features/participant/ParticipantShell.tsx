@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { MOCK_PROGRAM } from "@/lib/mock-data";
 import { createClient } from "@/lib/supabase/client";
@@ -120,13 +120,12 @@ interface Props {
 
 export default function ParticipantShell({ children, userName, userInitials, isAdmin }: Props) {
   const pathname = usePathname();
-  const router = useRouter();
   const activeKey = getActiveKey(pathname);
 
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/login");
+    window.location.href = "/login";
   }
 
   return (
@@ -206,7 +205,7 @@ export default function ParticipantShell({ children, userName, userInitials, isA
 
       {/* ── Mobile bottom tab bar ── */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-100 shadow-[0_-1px_0_0_#f3f4f6]">
-        <div className="grid grid-cols-5 h-16 max-w-lg mx-auto">
+        <div className="grid grid-cols-6 h-16 max-w-lg mx-auto">
           {NAV.map((item) => {
             const isActive = activeKey === item.key;
             return (
@@ -223,6 +222,18 @@ export default function ParticipantShell({ children, userName, userInitials, isA
               </Link>
             );
           })}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex flex-col items-center justify-center gap-0.5 text-gray-400 transition-colors hover:text-red-500"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            <span className="text-[10px] font-medium leading-none">יציאה</span>
+          </button>
         </div>
       </nav>
     </div>

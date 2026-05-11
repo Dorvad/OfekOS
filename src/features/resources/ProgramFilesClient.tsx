@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getResources } from "@/lib/admin-service";
+import { createClient } from "@/lib/supabase/client";
 import type { AdminResource } from "@/lib/types";
 
 const TYPE_ICONS: Record<string, string> = {
@@ -48,6 +49,22 @@ export default function ProgramFilesClient() {
 
   useEffect(() => {
     loadResources();
+  }, [loadResources]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("participant-program-resources")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "resources" },
+        () => { loadResources(); }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [loadResources]);
 
   if (loading) {
