@@ -59,9 +59,12 @@ export async function deleteParticipant(id: string): Promise<void> {
 }
 
 export async function updateParticipantCohort(userId: string, cohortId: string | null): Promise<void> {
-  const supabase = createClient();
-  const { error } = await supabase.from("users").update({ cohort_id: cohortId }).eq("id", userId);
-  if (error) throw error;
+  const res = await fetch("/api/admin/update-participant-cohort", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, cohortId }),
+  });
+  if (!res.ok) throw new Error(await res.text());
 }
 
 // ── Cohorts ─────────────────────────────────────────────────
@@ -82,23 +85,31 @@ export async function getCohorts(): Promise<Cohort[]> {
 }
 
 export async function createCohort(name: string): Promise<Cohort> {
-  const supabase = createClient();
-  const { data, error } = await supabase.from("cohorts").insert({ name }).select().single();
-  if (error) throw error;
-  return { id: data.id, name: data.name, participantIds: [] };
+  const res = await fetch("/api/admin/cohorts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "create", name }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
 export async function renameCohort(id: string, name: string): Promise<void> {
-  const supabase = createClient();
-  const { error } = await supabase.from("cohorts").update({ name }).eq("id", id);
-  if (error) throw error;
+  const res = await fetch("/api/admin/cohorts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "rename", id, name }),
+  });
+  if (!res.ok) throw new Error(await res.text());
 }
 
 export async function deleteCohort(id: string): Promise<void> {
-  const supabase = createClient();
-  await supabase.from("users").update({ cohort_id: null }).eq("cohort_id", id);
-  const { error } = await supabase.from("cohorts").delete().eq("id", id);
-  if (error) throw error;
+  const res = await fetch("/api/admin/cohorts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "delete", id }),
+  });
+  if (!res.ok) throw new Error(await res.text());
 }
 
 // ── Assignment lock control ──────────────────────────────────
@@ -113,12 +124,12 @@ export async function getAssignmentLockStates(): Promise<Record<string, boolean>
 }
 
 export async function setAssignmentLocked(assignmentId: string, unlocked: boolean): Promise<void> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("assignments")
-    .update({ is_unlocked: unlocked, updated_at: new Date().toISOString() })
-    .eq("id", assignmentId);
-  if (error) throw error;
+  const res = await fetch("/api/admin/assignments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ assignmentId, unlocked }),
+  });
+  if (!res.ok) throw new Error(await res.text());
   if (typeof window !== "undefined") {
     localStorage.setItem(`ofekos:admin:assignment:${assignmentId}:unlocked`, String(unlocked));
   }
@@ -146,30 +157,13 @@ export async function getResources(): Promise<AdminResource[]> {
 }
 
 export async function addResource(meta: NewAdminResource): Promise<AdminResource> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("resources")
-    .insert({
-      name: meta.name,
-      type: meta.type,
-      url: meta.url,
-      file_size_kb: meta.fileSizeKb,
-      description: meta.description,
-      session_number: meta.sessionNumber,
-    })
-    .select()
-    .single();
-  if (error) throw error;
-  return {
-    id: data.id,
-    name: data.name,
-    type: data.type,
-    url: data.url,
-    fileSizeKb: data.file_size_kb,
-    description: data.description,
-    sessionNumber: data.session_number,
-    uploadedAt: (data.created_at as string).split("T")[0],
-  };
+  const res = await fetch("/api/admin/resources-manage", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "add", ...meta }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
 export async function uploadResourceFile(file: File, sessionNumber: number): Promise<AdminResource> {
@@ -191,9 +185,12 @@ export async function uploadResourceFile(file: File, sessionNumber: number): Pro
 }
 
 export async function deleteResource(id: string): Promise<void> {
-  const supabase = createClient();
-  const { error } = await supabase.from("resources").delete().eq("id", id);
-  if (error) throw error;
+  const res = await fetch("/api/admin/resources-manage", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "delete", id }),
+  });
+  if (!res.ok) throw new Error(await res.text());
 }
 
 // ── Analytics ────────────────────────────────────────────────
