@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MOCK_ASSIGNMENTS } from "@/lib/mock-data";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import AssignmentDetailClient from "@/features/assignments/AssignmentDetailClient";
 
 export const dynamic = "force-dynamic";
@@ -24,8 +24,8 @@ export default async function AssignmentDetailPage({ params }: PageProps) {
   const mockAssignment = MOCK_ASSIGNMENTS.find((a) => a.id === id);
   if (!mockAssignment) notFound();
 
-  const supabase = await createClient();
-  const { data: dbAssignment } = await supabase
+  const service = createServiceClient();
+  const { data: dbAssignment } = await service
     .from("assignments")
     .select("is_unlocked")
     .eq("id", id)

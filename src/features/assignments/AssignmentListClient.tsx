@@ -39,12 +39,11 @@ export default function AssignmentListClient({ assignments }: AssignmentListClie
   }, [router]);
 
   useEffect(() => {
+    // 1. Seed from localStorage immediately for fast render
     const s: Record<string, AssignmentStatus> = {};
     const p: Record<string, number> = {};
     for (const a of assignments) {
-      const isUnlocked = a.isUnlocked;
-
-      if (!isUnlocked) {
+      if (!a.isUnlocked) {
         s[a.id] = "locked";
         p[a.id] = 0;
       } else {
@@ -58,6 +57,52 @@ export default function AssignmentListClient({ assignments }: AssignmentListClie
     setStatuses(s);
     setPhaseIndices(p);
     setHydrated(true);
+
+    // 2. Overlay with Supabase data (DB is authoritative; recovers cleared localStorage)
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: rows } = await supabase
+        .from("participant_assignments")
+        .select("assignment_id, status, current_phase")
+        .eq("user_id", user.id);
+      if (!rows || rows.length === 0) return;
+
+      setStatuses((prev) => {
+        const next = { ...prev };
+        for (const row of rows) {
+          const a = assignments.find((a) => a.id === row.assignment_id);
+          if (a?.isUnlocked && row.status && row.status !== "locked") {
+            next[row.assignment_id] = row.status as AssignmentStatus;
+            // keep localStorage in sync
+            import("@/lib/assignment-storage").then(({ setAssignmentStatus }) =>
+              setAssignmentStatus(row.assignment_id, row.status as AssignmentStatus)
+            );
+          }
+        }
+        return next;
+      });
+
+      setPhaseIndices((prev) => {
+        const next = { ...prev };
+        for (const row of rows) {
+          if (row.current_phase) {
+            const a = assignments.find((a) => a.id === row.assignment_id);
+            if (a) {
+              const idx = a.phases.findIndex((ph) => ph.id === row.current_phase);
+              if (idx >= 0) {
+                next[row.assignment_id] = idx;
+                import("@/lib/assignment-storage").then(({ setAssignmentPhase }) =>
+                  setAssignmentPhase(row.assignment_id, row.current_phase)
+                );
+              }
+            }
+          }
+        }
+        return next;
+      });
+    })();
   }, [assignments]);
 
   if (!hydrated) {

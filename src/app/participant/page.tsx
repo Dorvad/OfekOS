@@ -53,7 +53,7 @@ export default async function ParticipantDashboard() {
     }
   }
 
-  // Fetch real lock states — use service client to bypass RLS on assignments table
+  // Fetch lock states via service client (bypasses RLS on assignments table)
   const service = createServiceClient();
   const { data: dbAssignments } = await service
     .from("assignments")
@@ -68,8 +68,31 @@ export default async function ParticipantDashboard() {
     isUnlocked: lockMap[a.id] !== undefined ? lockMap[a.id] : a.isUnlocked,
   }));
 
-  const currentAssignment = assignments.find((a) => a.isUnlocked);
-  const unlockedCount = assignments.filter((a) => a.isUnlocked).length;
+  // Fetch the current user's assignment progress from Supabase
+  const DONE_STATUSES = ["submitted", "achieved"];
+  const statusMap: Record<string, string> = {};
+  if (user) {
+    const { data: paRows } = await supabase
+      .from("participant_assignments")
+      .select("assignment_id, status")
+      .eq("user_id", user.id);
+    for (const row of paRows ?? []) {
+      statusMap[row.assignment_id] = row.status;
+    }
+  }
+
+  const unlockedAssignments = assignments.filter((a) => a.isUnlocked);
+  const unlockedCount = unlockedAssignments.length;
+
+  // Current = first unlocked assignment not yet done (in-progress or not started)
+  const currentAssignment = unlockedAssignments.find(
+    (a) => !DONE_STATUSES.includes(statusMap[a.id] ?? "")
+  ) ?? null;
+
+  // Are all unlocked assignments completed?
+  const allDone =
+    unlockedCount > 0 &&
+    unlockedAssignments.every((a) => DONE_STATUSES.includes(statusMap[a.id] ?? ""));
 
   const nextSession = MOCK_SESSIONS.find((s) => s.status === "upcoming" || s.status === "active");
   const nextSessionNumber = nextSession ? parseInt(nextSession.id.replace("s", ""), 10) : null;
@@ -84,8 +107,8 @@ export default async function ParticipantDashboard() {
         <p className="text-sm text-gray-400 mt-0.5">{MOCK_PROGRAM.name.split("—")[0].trim()}</p>
       </div>
 
-      {/* Current assignment — hero card */}
-      {currentAssignment && (
+      {/* Current assignment — hero card / empty states */}
+      {currentAssignment ? (
         <Link href={`/participant/assignments/${currentAssignment.id}`} className="block group">
           <div className={`rounded-2xl bg-gradient-to-br ${accentHero[currentAssignment.accentColor]} p-5 shadow-md group-hover:shadow-lg transition-shadow`}>
             <div className="flex items-start justify-between gap-3 mb-4">
@@ -99,7 +122,7 @@ export default async function ParticipantDashboard() {
                 <p className="text-white/80 text-sm mt-1">{currentAssignment.subtitle}</p>
               </div>
               <div className="shrink-0 mt-1 px-3 py-2 rounded-xl text-sm font-semibold bg-white/20 group-hover:bg-white/30 text-white transition-colors">
-                פתח ←
+                {DONE_STATUSES.includes(statusMap[currentAssignment.id] ?? "") ? "צפה ←" : statusMap[currentAssignment.id] ? "המשך ←" : "התחל ←"}
               </div>
             </div>
             <p className="text-white/70 text-xs leading-relaxed line-clamp-2">
@@ -107,6 +130,22 @@ export default async function ParticipantDashboard() {
             </p>
           </div>
         </Link>
+      ) : allDone ? (
+        <div className="rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-500 p-5 shadow-md">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-2xl">🎉</span>
+            <h2 className="text-white font-bold text-lg">כל המטלות הושלמו!</h2>
+          </div>
+          <p className="text-white/80 text-sm leading-relaxed">
+            השלמת את כל המטלות הפתוחות לעת עתה. כאשר יפתחו מטלות חדשות תקבל/י עדכון.
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white p-5 text-center">
+          <div className="text-3xl mb-2">🔒</div>
+          <h2 className="font-bold text-gray-600 mb-1">אין מטלות פתוחות כרגע</h2>
+          <p className="text-sm text-gray-400">המטלות ייפתחו בהמשך התוכנית.</p>
+        </div>
       )}
 
       {/* Program journey */}
