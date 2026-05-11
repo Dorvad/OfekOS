@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { MOCK_USER, MOCK_PROGRAM } from "@/lib/mock-data";
+import { MOCK_PROGRAM } from "@/lib/mock-data";
 import { createClient } from "@/lib/supabase/client";
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -111,22 +111,40 @@ function NavIcon({ navKey, active }: { navKey: string; active: boolean }) {
 
 // ── Shell ────────────────────────────────────────────────────────────────────
 
-export default function ParticipantShell({ children }: { children: React.ReactNode }) {
+interface Props {
+  children: React.ReactNode;
+  userName: string;
+  userInitials: string;
+  isAdmin: boolean;
+}
+
+export default function ParticipantShell({ children, userName, userInitials, isAdmin }: Props) {
   const pathname = usePathname();
-  const router = useRouter();
   const activeKey = getActiveKey(pathname);
-  const firstName = MOCK_USER.name.split(" ")[0];
-  const initials = MOCK_USER.avatarInitials;
 
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.replace("/login");
-    router.refresh();
+    window.location.href = "/login";
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
+
+      {/* Admin banner — shown when admin browses as participant */}
+      {isAdmin && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between">
+          <span className="text-xs font-medium text-amber-800">
+            צופה כמשתתף — אתה רואה את הממשק כפי שנראה למשתתפים
+          </span>
+          <Link
+            href="/admin"
+            className="text-xs font-semibold text-amber-900 hover:text-amber-700 underline underline-offset-2"
+          >
+            חזור לניהול ←
+          </Link>
+        </div>
+      )}
 
       {/* ── Top bar ── */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
@@ -161,19 +179,21 @@ export default function ParticipantShell({ children }: { children: React.ReactNo
             })}
           </nav>
 
-          {/* User avatar */}
+          {/* User + logout */}
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="hidden sm:inline-flex items-center rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-            >
-              Log out
-            </button>
-            <span className="hidden sm:block text-xs text-gray-500">{firstName}</span>
+            {userName && (
+              <span className="hidden sm:block text-xs text-gray-500">{userName}</span>
+            )}
             <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
-              {initials}
+              {userInitials}
             </div>
+            <button
+              onClick={handleLogout}
+              className="text-xs text-gray-400 hover:text-red-500 transition-colors px-2 py-1 rounded-lg hover:bg-red-50 font-medium"
+              title="יציאה מהמערכת"
+            >
+              יציאה
+            </button>
           </div>
         </div>
       </header>

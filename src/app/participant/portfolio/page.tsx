@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import {
   getAssignmentStatus,
   getAssignmentData,
@@ -125,43 +126,74 @@ export default function PortfolioPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const built: PortfolioItem[] = PORTFOLIO_CONFIG.map((cfg) => {
-      const status = getAssignmentStatus(cfg.id);
-      const raw = getAssignmentData<Record<string, unknown>>(cfg.id);
+    (async () => {
+      // Build from localStorage first (instant)
+      const built: PortfolioItem[] = PORTFOLIO_CONFIG.map((cfg) => {
+        const status = getAssignmentStatus(cfg.id);
+        const raw = getAssignmentData<Record<string, unknown>>(cfg.id);
 
-      let previewField: string | null = null;
-      if (raw && cfg.previewKey && raw[cfg.previewKey]) {
-        const val = raw[cfg.previewKey];
-        if (typeof val === "string" && val.trim()) {
-          previewField = val.slice(0, 80);
+        let previewField: string | null = null;
+        if (raw && cfg.previewKey && raw[cfg.previewKey]) {
+          const val = raw[cfg.previewKey];
+          if (typeof val === "string" && val.trim()) {
+            previewField = val.slice(0, 80);
+          }
+        }
+
+        const isSaved = status === "submitted" || status === "achieved";
+        const isStarted =
+          raw !== null &&
+          Object.values(raw).some((v) => typeof v === "string" && v.trim().length > 0);
+
+        return {
+          id: cfg.id,
+          sessionNumber: cfg.sessionNumber,
+          title: cfg.title,
+          outputName: cfg.outputName,
+          accentColor: cfg.accentColor,
+          previewField,
+          status: (isSaved ? "saved" : isStarted ? "in_progress" : "empty") as PortfolioItem["status"],
+        };
+      });
+
+      // Merge with Supabase data (Supabase wins — ensures cross-device consistency)
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: paRows } = await supabase
+          .from("participant_assignments")
+          .select("assignment_id, status, data")
+          .eq("user_id", user.id);
+
+        if (paRows) {
+          for (const row of paRows) {
+            const idx = built.findIndex((i) => i.id === row.assignment_id);
+            if (idx === -1) continue;
+            const cfg = PORTFOLIO_CONFIG[idx];
+            const isSaved = row.status === "submitted" || row.status === "achieved";
+            const rowData = row.data as Record<string, unknown> | null;
+            const isStarted = rowData !== null && Object.values(rowData ?? {}).some(
+              (v) => typeof v === "string" && (v as string).trim().length > 0
+            );
+            let previewField = built[idx].previewField;
+            if (rowData && cfg.previewKey && rowData[cfg.previewKey]) {
+              const val = rowData[cfg.previewKey];
+              if (typeof val === "string" && val.trim()) {
+                previewField = val.slice(0, 80);
+              }
+            }
+            built[idx] = {
+              ...built[idx],
+              status: isSaved ? "saved" : isStarted ? "in_progress" : built[idx].status,
+              previewField,
+            };
+          }
         }
       }
 
-      const isSaved = status === "submitted" || status === "achieved";
-      const isStarted =
-        raw !== null &&
-        Object.values(raw).some(
-          (v) => typeof v === "string" && v.trim().length > 0
-        );
-
-      const portfolioStatus: PortfolioItem["status"] = isSaved
-        ? "saved"
-        : isStarted
-        ? "in_progress"
-        : "empty";
-
-      return {
-        id: cfg.id,
-        sessionNumber: cfg.sessionNumber,
-        title: cfg.title,
-        outputName: cfg.outputName,
-        accentColor: cfg.accentColor,
-        previewField,
-        status: portfolioStatus,
-      };
-    });
-    setItems(built);
-    setMounted(true);
+      setItems(built);
+      setMounted(true);
+    })();
   }, []);
 
   const savedCount = items.filter((i) => i.status === "saved").length;

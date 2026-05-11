@@ -206,17 +206,19 @@ export async function getCompletionStats(): Promise<AssignmentCompletionStat[]> 
     supabase.from("assignments").select("id, title, accent_color, is_unlocked"),
   ]);
   const total = (users ?? []).length;
-  const lockMap = Object.fromEntries((assignments ?? []).map((a) => [a.id, a.is_unlocked]));
-  const accentMap = Object.fromEntries((assignments ?? []).map((a) => [a.id, a.accent_color]));
-  const titleMap = Object.fromEntries((assignments ?? []).map((a) => [a.id, a.title]));
-  return MOCK_ASSIGNMENTS.map((a) => {
-    if (!lockMap[a.id]) {
-      return { assignmentId: a.id, title: titleMap[a.id] ?? a.title, accentColor: accentMap[a.id] ?? a.accentColor, notStarted: 0, inProgress: 0, submitted: 0, total };
+  // Use live DB assignments; fall back to MOCK shape if table is empty
+  const assignmentList = (assignments && assignments.length > 0)
+    ? assignments.map((a) => ({ id: a.id, title: a.title as string, accentColor: a.accent_color as string, isUnlocked: a.is_unlocked as boolean }))
+    : MOCK_ASSIGNMENTS.map((a) => ({ id: a.id, title: a.title, accentColor: a.accentColor, isUnlocked: a.isUnlocked }));
+
+  return assignmentList.map((a) => {
+    if (!a.isUnlocked) {
+      return { assignmentId: a.id, title: a.title, accentColor: a.accentColor, notStarted: 0, inProgress: 0, submitted: 0, total };
     }
     const rows = (pas ?? []).filter((p) => p.assignment_id === a.id);
     const submitted = rows.filter((p) => p.status === "submitted" || p.status === "achieved").length;
     const inProgress = rows.filter((p) => !["locked", "available", "submitted", "achieved"].includes(p.status)).length;
-    return { assignmentId: a.id, title: titleMap[a.id] ?? a.title, accentColor: accentMap[a.id] ?? a.accentColor, notStarted: Math.max(0, total - submitted - inProgress), inProgress, submitted, total };
+    return { assignmentId: a.id, title: a.title, accentColor: a.accentColor, notStarted: Math.max(0, total - submitted - inProgress), inProgress, submitted, total };
   });
 }
 
