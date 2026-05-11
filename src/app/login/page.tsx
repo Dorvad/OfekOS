@@ -27,7 +27,7 @@ export default function LoginPage() {
     setLoading(true);
 
     const supabase = createClient();
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    const { error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -38,15 +38,8 @@ export default function LoginPage() {
       return;
     }
 
-    // Always check DB role — never bypass
-    const { data: userData } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", authData.user.id)
-      .single();
-
-    // Hard navigation so middleware receives the auth cookie cleanly
-    window.location.href = userData?.role === "admin" ? "/admin" : "/participant";
+    // Redirect to / — server-side role check handles routing to /admin or /participant
+    window.location.href = "/";
   }
 
   async function handleRegister(e: React.FormEvent) {
