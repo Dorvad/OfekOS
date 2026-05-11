@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import ParticipantShell from "@/features/participant/ParticipantShell";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,8 @@ export default async function ParticipantLayout({ children }: { children: React.
   let isAdmin = false;
 
   if (user) {
-    const { data } = await supabase
+    const service = createServiceClient();
+    const { data } = await service
       .from("users")
       .select("name, avatar_initials, role")
       .eq("id", user.id)
