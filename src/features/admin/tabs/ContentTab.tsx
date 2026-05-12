@@ -121,8 +121,9 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
       setSavedLocks({ ...pendingLocks });
       onDataChange();
     } catch (err) {
-      console.error("failed to save lock states", err);
-      setSaveError("שגיאה בשמירה. נסה שנית.");
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("failed to save lock states", msg);
+      setSaveError(`שגיאה: ${msg}`);
       setPendingLocks({ ...savedLocks });
     } finally {
       setSaving(false);
