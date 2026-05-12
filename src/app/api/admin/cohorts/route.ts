@@ -9,6 +9,22 @@ function serviceClient() {
   );
 }
 
+export async function GET() {
+  const supabase = serviceClient();
+  const [{ data: cohorts, error: ce }, { data: users, error: ue }] = await Promise.all([
+    supabase.from("cohorts").select("id, name").order("created_at"),
+    supabase.from("users").select("id, cohort_id").eq("role", "participant"),
+  ]);
+  if (ce) return NextResponse.json({ error: ce.message }, { status: 400 });
+  if (ue) return NextResponse.json({ error: ue.message }, { status: 400 });
+  const result = (cohorts ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    participantIds: (users ?? []).filter((u) => u.cohort_id === c.id).map((u) => u.id),
+  }));
+  return NextResponse.json(result);
+}
+
 // POST { action: "create", name } | { action: "rename", id, name } | { action: "delete", id }
 export async function POST(request: NextRequest) {
   const body = await request.json();

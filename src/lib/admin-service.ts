@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/client";
 import { MOCK_ASSIGNMENTS } from "./mock-data";
 import type {
   Participant, NewParticipant, Cohort, AdminResource, NewAdminResource,
@@ -8,14 +7,10 @@ import type {
 // ── Participants ────────────────────────────────────────────
 
 export async function getParticipants(): Promise<Participant[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("users")
-    .select("id, name, email, cohort_id, avatar_initials")
-    .eq("role", "participant")
-    .order("created_at");
-  if (error) throw error;
-  return (data ?? []).map((u) => ({
+  const res = await fetch("/api/admin/participants", { cache: "no-store" });
+  if (!res.ok) throw new Error(await res.text());
+  const data: { id: string; name: string; email: string; cohort_id: string | null }[] = await res.json();
+  return data.map((u) => ({
     id: u.id,
     name: u.name,
     email: u.email,
@@ -70,18 +65,9 @@ export async function updateParticipantCohort(userId: string, cohortId: string |
 // ── Cohorts ─────────────────────────────────────────────────
 
 export async function getCohorts(): Promise<Cohort[]> {
-  const supabase = createClient();
-  const [{ data: cohorts, error: ce }, { data: users, error: ue }] = await Promise.all([
-    supabase.from("cohorts").select("id, name").order("created_at"),
-    supabase.from("users").select("id, cohort_id").eq("role", "participant"),
-  ]);
-  if (ce) throw ce;
-  if (ue) throw ue;
-  return (cohorts ?? []).map((c) => ({
-    id: c.id,
-    name: c.name,
-    participantIds: (users ?? []).filter((u) => u.cohort_id === c.id).map((u) => u.id),
-  }));
+  const res = await fetch("/api/admin/cohorts", { cache: "no-store" });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
 export async function createCohort(name: string): Promise<Cohort> {
@@ -186,60 +172,25 @@ export async function deleteResource(id: string): Promise<void> {
 // ── Analytics ────────────────────────────────────────────────
 
 export async function getCompletionStats(): Promise<AssignmentCompletionStat[]> {
-  const supabase = createClient();
-  const [{ data: pas }, { data: users }, { data: assignments }] = await Promise.all([
-    supabase.from("participant_assignments").select("assignment_id, status"),
-    supabase.from("users").select("id").eq("role", "participant"),
-    supabase.from("assignments").select("id, title, accent_color, is_unlocked"),
-  ]);
-  const total = (users ?? []).length;
-  // Use live DB assignments; fall back to MOCK shape if table is empty
-  const assignmentList = (assignments && assignments.length > 0)
-    ? assignments.map((a) => ({ id: a.id, title: a.title as string, accentColor: a.accent_color as string, isUnlocked: a.is_unlocked as boolean }))
-    : MOCK_ASSIGNMENTS.map((a) => ({ id: a.id, title: a.title, accentColor: a.accentColor, isUnlocked: a.isUnlocked }));
-
-  return assignmentList.map((a) => {
-    if (!a.isUnlocked) {
-      return { assignmentId: a.id, title: a.title, accentColor: a.accentColor, notStarted: 0, inProgress: 0, submitted: 0, total };
-    }
-    const rows = (pas ?? []).filter((p) => p.assignment_id === a.id);
-    const submitted = rows.filter((p) => p.status === "submitted" || p.status === "achieved").length;
-    const inProgress = rows.filter((p) => !["locked", "available", "submitted", "achieved"].includes(p.status)).length;
-    return { assignmentId: a.id, title: a.title, accentColor: a.accentColor, notStarted: Math.max(0, total - submitted - inProgress), inProgress, submitted, total };
-  });
+  const res = await fetch("/api/admin/analytics", { cache: "no-store" });
+  if (!res.ok) return MOCK_ASSIGNMENTS.map((a) => ({
+    assignmentId: a.id, title: a.title, accentColor: a.accentColor,
+    notStarted: 0, inProgress: 0, submitted: 0, total: 0,
+  }));
+  const { completionStats } = await res.json();
+  return completionStats;
 }
 
 export async function getSubmissions(): Promise<Submission[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("participant_assignments")
-    .select("id, user_id, assignment_id, insight, closing_action, closing_question, achieved_at, users(name), assignments(title)")
-    .not("insight", "is", null)
-    .order("achieved_at", { ascending: false });
-  if (error) return [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data ?? []).map((row: any) => ({
-    id: row.id,
-    userId: row.user_id,
-    userName: row.users?.name ?? "",
-    assignmentId: row.assignment_id,
-    assignmentTitle: row.assignments?.title ?? "",
-    insight: row.insight ?? "",
-    action: row.closing_action ?? "",
-    question: row.closing_question ?? "",
-    submittedAt: row.achieved_at?.split("T")[0] ?? "",
-  }));
+  const res = await fetch("/api/admin/analytics", { cache: "no-store" });
+  if (!res.ok) return [];
+  const { submissions } = await res.json();
+  return submissions;
 }
 
 export async function getPrepareStats(): Promise<{ completed: number; total: number }> {
-  const supabase = createClient();
-  const [{ data: prepares }, { data: users }] = await Promise.all([
-    supabase.from("prepare_data").select("user_id, insight, dilemma, action, question"),
-    supabase.from("users").select("id").eq("role", "participant"),
-  ]);
-  const total = (users ?? []).length;
-  const completed = (prepares ?? []).filter(
-    (p) => p.insight && p.dilemma && p.action && p.question
-  ).length;
-  return { completed, total };
+  const res = await fetch("/api/admin/analytics", { cache: "no-store" });
+  if (!res.ok) return { completed: 0, total: 0 };
+  const { prepareStats } = await res.json();
+  return prepareStats;
 }
