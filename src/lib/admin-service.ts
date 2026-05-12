@@ -141,22 +141,9 @@ export async function setAssignmentLocked(assignmentId: string, unlocked: boolea
 // ── Resources ────────────────────────────────────────────────
 
 export async function getResources(): Promise<AdminResource[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("resources")
-    .select("id, name, type, url, file_size_kb, description, session_number, created_at")
-    .order("created_at");
-  if (error) throw error;
-  return (data ?? []).map((r) => ({
-    id: r.id,
-    name: r.name,
-    type: r.type,
-    url: r.url,
-    fileSizeKb: r.file_size_kb,
-    description: r.description,
-    sessionNumber: r.session_number,
-    uploadedAt: (r.created_at as string).split("T")[0],
-  }));
+  const res = await fetch("/api/admin/resources-manage", { cache: "no-store" });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
 export async function addResource(meta: NewAdminResource): Promise<AdminResource> {

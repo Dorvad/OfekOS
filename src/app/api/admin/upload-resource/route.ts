@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type { AdminResource } from "@/lib/types";
 
-const DEFAULT_BUCKET = "program-resources";
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB — stored as base64 in DB
 
 const EXT_TO_TYPE: Record<string, AdminResource["type"]> = {
   pdf: "pdf",
@@ -18,11 +17,6 @@ const EXT_TO_TYPE: Record<string, AdminResource["type"]> = {
   mov: "video",
   webm: "video",
 };
-
-function sanitizeFileName(name: string): string {
-  const normalized = name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
-  return normalized.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "resource";
-}
 
 function toAdminResource(row: {
   id: string;
@@ -51,10 +45,7 @@ export async function POST(request: Request) {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    return NextResponse.json(
-      { error: "Missing Supabase server configuration for file uploads." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Missing Supabase configuration." }, { status: 500 });
   }
 
   const formData = await request.formData();
@@ -71,49 +62,27 @@ export async function POST(request: Request) {
   }
 
   if (file.size > MAX_FILE_SIZE_BYTES) {
-    return NextResponse.json({ error: "File is larger than 10MB." }, { status: 400 });
+    return NextResponse.json({ error: "File is larger than 2MB." }, { status: 400 });
   }
+
+  // Convert file to base64 data URL — stored directly in the DB
+  const bytes = await file.arrayBuffer();
+  const base64 = Buffer.from(bytes).toString("base64");
+  const mimeType = file.type || "application/octet-stream";
+  const dataUrl = `data:${mimeType};base64,${base64}`;
+
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const bucket = process.env.SUPABASE_RESOURCE_BUCKET || DEFAULT_BUCKET;
 
-  const buckets = await supabase.storage.listBuckets();
-  if (buckets.error) {
-    return NextResponse.json({ error: buckets.error.message }, { status: 500 });
-  }
-
-  if (!buckets.data.some((b) => b.name === bucket)) {
-    const created = await supabase.storage.createBucket(bucket, {
-      public: true,
-      fileSizeLimit: MAX_FILE_SIZE_BYTES,
-    });
-    if (created.error) {
-      return NextResponse.json({ error: created.error.message }, { status: 500 });
-    }
-  }
-
-  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-  const safeName = sanitizeFileName(file.name);
-  const storagePath = `${sessionNumber}/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
-  const bytes = await file.arrayBuffer();
-  const upload = await supabase.storage.from(bucket).upload(storagePath, bytes, {
-    contentType: file.type || "application/octet-stream",
-    upsert: false,
-  });
-
-  if (upload.error) {
-    return NextResponse.json({ error: upload.error.message }, { status: 500 });
-  }
-
-  const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(storagePath);
   const { data, error } = await supabase
     .from("resources")
     .insert({
       name: file.name,
       type: EXT_TO_TYPE[ext] ?? "other",
-      url: publicUrl.publicUrl,
+      url: dataUrl,
       file_size_kb: Math.max(1, Math.round(file.size / 1024)),
       description: "",
       session_number: sessionNumber,
@@ -122,7 +91,6 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    await supabase.storage.from(bucket).remove([storagePath]);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
