@@ -9,6 +9,26 @@ function serviceClient() {
   );
 }
 
+export async function GET() {
+  const { data, error } = await serviceClient()
+    .from("resources")
+    .select("id, name, type, url, file_size_kb, description, session_number, created_at")
+    .order("created_at");
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json(
+    (data ?? []).map((r) => ({
+      id: r.id,
+      name: r.name,
+      type: r.type,
+      url: r.url,
+      fileSizeKb: r.file_size_kb,
+      description: r.description,
+      sessionNumber: r.session_number,
+      uploadedAt: (r.created_at as string).split("T")[0],
+    }))
+  );
+}
+
 // POST { action: "add", name, type, url, fileSizeKb, description, sessionNumber }
 // POST { action: "delete", id }
 export async function POST(request: NextRequest) {
