@@ -151,7 +151,9 @@ export default function ParticipantShell({ children, userName, userInitials, isA
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
-            <span className="text-base font-bold text-gray-900 tracking-tight leading-none">OfekOS</span>
+            <span className="text-base font-bold tracking-tight leading-none select-none">
+              <span className="text-gray-700">ofek</span><span className="text-brand-600">OS</span>
+            </span>
             <span className="hidden sm:block text-xs text-gray-400 border-r border-gray-200 pr-2.5 leading-none">
               {MOCK_PROGRAM.name.split("—")[0].trim()}
             </span>
@@ -168,7 +170,7 @@ export default function ParticipantShell({ children, userName, userInitials, isA
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
                     isActive
-                      ? "bg-indigo-50 text-indigo-700"
+                      ? "bg-brand-50 text-brand-700"
                       : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
                   )}
                 >
@@ -184,7 +186,7 @@ export default function ParticipantShell({ children, userName, userInitials, isA
             {userName && (
               <span className="hidden sm:block text-xs text-gray-500">{userName}</span>
             )}
-            <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
+            <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
               {userInitials}
             </div>
             <button
@@ -214,7 +216,7 @@ export default function ParticipantShell({ children, userName, userInitials, isA
                 href={item.href}
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 transition-colors",
-                  isActive ? "text-indigo-600" : "text-gray-400"
+                  isActive ? "text-brand-600" : "text-gray-400"
                 )}
               >
                 <NavIcon navKey={item.key} active={isActive} />

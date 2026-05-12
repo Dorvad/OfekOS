@@ -163,7 +163,7 @@ export default async function ParticipantDashboard() {
           <span className="text-xs text-gray-400">6 מטלות · 3 שלבים כל אחת</span>
           <Link
             href="/participant/assignments"
-            className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+            className="text-xs font-semibold text-brand-600 hover:text-brand-700"
           >
             כל המטלות ←
           </Link>
@@ -183,7 +183,7 @@ export default async function ParticipantDashboard() {
       <div className="grid grid-cols-2 gap-3">
         <Link href="/participant/portfolio">
           <Card className="text-center hover:shadow-md transition-shadow cursor-pointer h-full">
-            <div className="text-2xl font-bold text-indigo-600 mb-1">{unlockedCount}</div>
+            <div className="text-2xl font-bold text-brand-600 mb-1">{unlockedCount}</div>
             <div className="text-xs text-gray-500">מטלות פתוחות</div>
           </Card>
         </Link>
