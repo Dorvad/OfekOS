@@ -10,12 +10,17 @@ export default async function HomePage() {
 
   if (!user) redirect("/login");
 
-  const service = createServiceClient();
-  const { data } = await service
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  redirect(data?.role === "admin" ? "/admin" : "/participant");
+  let role = "participant";
+  try {
+    const service = createServiceClient();
+    const { data } = await service
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    role = data?.role ?? "participant";
+  } catch {
+    // If service client fails (e.g. missing env var), fall back to participant
+  }
+  redirect(role === "admin" ? "/admin" : "/participant");
 }
