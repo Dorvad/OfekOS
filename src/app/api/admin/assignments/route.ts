@@ -1,18 +1,18 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import { MOCK_ASSIGNMENTS } from "@/lib/mock-data";
 
-const SEED_ASSIGNMENTS = [
-  { id: "a1", session_number: 1, is_unlocked: true },
-  { id: "a2", session_number: 2, is_unlocked: true },
-  { id: "a3", session_number: 3, is_unlocked: false },
-  { id: "a4", session_number: 4, is_unlocked: false },
-  { id: "a5", session_number: 5, is_unlocked: false },
-  { id: "a6", session_number: 6, is_unlocked: false },
-];
-
-const SESSION_NUMBER: Record<string, number> = {
-  a1: 1, a2: 2, a3: 3, a4: 4, a5: 5, a6: 6,
-};
+// Build full seed rows from mock data so every NOT NULL column is satisfied
+const SEED_ASSIGNMENTS = MOCK_ASSIGNMENTS.map((a) => ({
+  id: a.id,
+  session_number: a.sessionNumber,
+  title: a.title,
+  subtitle: a.subtitle,
+  mission_brief: a.missionBrief,
+  accent_color: a.accentColor,
+  achievement_label: a.achievementLabel,
+  is_unlocked: a.isUnlocked,
+}));
 
 function serviceClient() {
   return createClient(
@@ -30,7 +30,7 @@ export async function GET() {
     .order("id");
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  // Auto-seed if table is empty — ensures UPDATE has rows to target
+  // Auto-seed if table is empty — ensures upsert has rows to target
   if (!data || data.length === 0) {
     const { data: seeded, error: seedError } = await client
       .from("assignments")
@@ -38,7 +38,7 @@ export async function GET() {
       .select("id, is_unlocked")
       .order("id");
     if (seedError) return NextResponse.json({ error: seedError.message }, { status: 400 });
-    return NextResponse.json(seeded ?? SEED_ASSIGNMENTS);
+    return NextResponse.json(seeded ?? SEED_ASSIGNMENTS.map((a) => ({ id: a.id, is_unlocked: a.is_unlocked })));
   }
 
   return NextResponse.json(data);
@@ -52,14 +52,25 @@ export async function POST(request: NextRequest) {
 
   const client = serviceClient();
 
-  // Upsert so UPDATE works even if the row doesn't exist yet.
-  // session_number is included to satisfy the NOT NULL constraint on that column.
-  const { error } = await client
-    .from("assignments")
-    .upsert(
-      { id: assignmentId, session_number: SESSION_NUMBER[assignmentId] ?? 1, is_unlocked: unlocked },
-      { onConflict: "id" }
-    );
+  // Find the full mock row so we can satisfy every NOT NULL column on upsert
+  const mock = MOCK_ASSIGNMENTS.find((a) => a.id === assignmentId);
+  if (!mock) {
+    return NextResponse.json({ error: `Unknown assignment id: ${assignmentId}` }, { status: 400 });
+  }
+
+  const { error } = await client.from("assignments").upsert(
+    {
+      id: mock.id,
+      session_number: mock.sessionNumber,
+      title: mock.title,
+      subtitle: mock.subtitle,
+      mission_brief: mock.missionBrief,
+      accent_color: mock.accentColor,
+      achievement_label: mock.achievementLabel,
+      is_unlocked: unlocked,
+    },
+    { onConflict: "id" }
+  );
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
