@@ -2,13 +2,17 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
 const SEED_ASSIGNMENTS = [
-  { id: "a1", is_unlocked: true },
-  { id: "a2", is_unlocked: true },
-  { id: "a3", is_unlocked: false },
-  { id: "a4", is_unlocked: false },
-  { id: "a5", is_unlocked: false },
-  { id: "a6", is_unlocked: false },
+  { id: "a1", session_number: 1, is_unlocked: true },
+  { id: "a2", session_number: 2, is_unlocked: true },
+  { id: "a3", session_number: 3, is_unlocked: false },
+  { id: "a4", session_number: 4, is_unlocked: false },
+  { id: "a5", session_number: 5, is_unlocked: false },
+  { id: "a6", session_number: 6, is_unlocked: false },
 ];
+
+const SESSION_NUMBER: Record<string, number> = {
+  a1: 1, a2: 2, a3: 3, a4: 4, a5: 5, a6: 6,
+};
 
 function serviceClient() {
   return createClient(
@@ -48,10 +52,14 @@ export async function POST(request: NextRequest) {
 
   const client = serviceClient();
 
-  // Upsert so UPDATE works even if the row doesn't exist yet
+  // Upsert so UPDATE works even if the row doesn't exist yet.
+  // session_number is included to satisfy the NOT NULL constraint on that column.
   const { error } = await client
     .from("assignments")
-    .upsert({ id: assignmentId, is_unlocked: unlocked }, { onConflict: "id" });
+    .upsert(
+      { id: assignmentId, session_number: SESSION_NUMBER[assignmentId] ?? 1, is_unlocked: unlocked },
+      { onConflict: "id" }
+    );
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ ok: true });
