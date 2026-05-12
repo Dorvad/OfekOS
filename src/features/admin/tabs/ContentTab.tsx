@@ -153,10 +153,10 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
     if (!file) return;
 
     const sizeKb = Math.round(file.size / 1024);
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > 50 * 1024 * 1024) {
       setUpload({
         ...EMPTY_UPLOAD,
-        error: "הקובץ גדול מ-10MB. אנא בחר/י קובץ קטן יותר.",
+        error: "הקובץ גדול מ-50MB. אנא בחר/י קובץ קטן יותר.",
       });
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
@@ -289,7 +289,7 @@ export default function ContentTab({ lockStates, resources, onDataChange }: Prop
             {/* File input */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                בחר/י קובץ (עד 10MB — PDF, Word, PowerPoint, תמונה או וידאו)
+                בחר/י קובץ (עד 50MB — PDF, Word, PowerPoint, תמונה או וידאו)
               </label>
               <input
                 ref={fileInputRef}
