@@ -160,7 +160,7 @@ export default function UserSettingsMenu({
       {/* ── Dropdown ── */}
       {open && (
         <div
-          className="absolute left-0 top-11 z-50 w-64 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden"
+          className="absolute left-0 top-11 z-50 w-64 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden animate-slide-down"
           dir="rtl"
         >
           {/* User header */}

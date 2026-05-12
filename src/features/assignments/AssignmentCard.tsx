@@ -74,8 +74,10 @@ export default function AssignmentCard({
 
   const card = (
     <div
-      className={`relative rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm flex flex-col transition-shadow ${
-        isLocked ? "opacity-55" : "hover:shadow-md"
+      className={`relative rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col transition-all duration-200 ${
+        isLocked
+          ? "opacity-55 cursor-not-allowed"
+          : "group-hover:shadow-lg group-hover:-translate-y-0.5"
       }`}
     >
       {/* Color stripe */}
@@ -120,18 +122,18 @@ export default function AssignmentCard({
 
         {/* Title */}
         <div className="flex-1">
-          <h3 className={`font-bold text-base leading-snug ${isLocked ? "text-gray-400" : "text-gray-900"}`}>
+          <h3 className={`font-bold text-base leading-snug ${isLocked ? "text-gray-400 dark:text-gray-500" : "text-gray-900 dark:text-gray-100"}`}>
             {assignment.title}
           </h3>
-          <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{assignment.subtitle}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 leading-relaxed">{assignment.subtitle}</p>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-50">
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-50 dark:border-gray-700">
           <span className={`text-xs font-medium ${
             isDone ? "text-emerald-600" :
-            isLocked ? "text-gray-400" :
-            "text-gray-500"
+            isLocked ? "text-gray-400 dark:text-gray-500" :
+            "text-gray-500 dark:text-gray-400"
           }`}>
             {isDone ? "✓ " : ""}{statusLabels[status]}
           </span>
@@ -156,7 +158,7 @@ export default function AssignmentCard({
   if (isLocked) return card;
 
   return (
-    <Link href={`/participant/assignments/${assignment.id}`} className="block">
+    <Link href={`/participant/assignments/${assignment.id}`} className="block group active:scale-[0.99] transition-transform duration-100">
       {card}
     </Link>
   );

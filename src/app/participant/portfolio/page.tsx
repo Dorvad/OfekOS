@@ -219,22 +219,22 @@ export default function PortfolioPage() {
     <div className="max-w-3xl mx-auto px-4 py-6" dir="rtl">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
           תיק המנהל המתפתח שלי
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           התוצרים שלך ממטלות התוכנית
         </p>
       </div>
 
       {/* Progress counter */}
-      <div className="mb-5 rounded-2xl bg-white border border-gray-100 shadow-sm p-4 flex items-center justify-between">
+      <div className="mb-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center justify-between">
         <div>
-          <p className="text-2xl font-bold text-gray-900">
+          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {savedCount}
-            <span className="text-sm font-normal text-gray-400"> מתוך 6</span>
+            <span className="text-sm font-normal text-gray-400 dark:text-gray-500"> מתוך 6</span>
           </p>
-          <p className="text-xs text-gray-500">תוצרים נשמרו בתיק</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">תוצרים נשמרו בתיק</p>
         </div>
         <div className="flex gap-1">
           {items.map((item) => (
@@ -254,8 +254,8 @@ export default function PortfolioPage() {
 
       {/* Empty state */}
       {savedCount === 0 && items.every((i) => i.status === "empty") && (
-        <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm mb-5">
-          <p className="text-gray-400 text-sm">
+        <div className="rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center shadow-sm mb-5">
+          <p className="text-gray-400 dark:text-gray-500 text-sm">
             תיק המנהל שלך ריק כרגע — השלם מטלות כדי לאכלס אותו.
           </p>
         </div>
@@ -268,7 +268,7 @@ export default function PortfolioPage() {
           return (
             <div
               key={item.id}
-              className={`rounded-2xl border border-gray-100 bg-white p-5 shadow-sm ${
+              className={`rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 shadow-sm transition-colors ${
                 item.status === "saved" ? `border-r-4 ${accent.border}` : ""
               }`}
             >
@@ -284,10 +284,10 @@ export default function PortfolioPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 flex-wrap">
                     <div>
-                      <p className="text-xs text-gray-400 font-medium">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">
                         {item.title}
                       </p>
-                      <p className="font-bold text-gray-900 text-sm">
+                      <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">
                         {item.outputName}
                       </p>
                     </div>
@@ -314,13 +314,13 @@ export default function PortfolioPage() {
 
                   {/* Preview */}
                   {item.previewField && (
-                    <p className="mt-2 text-xs text-gray-500 line-clamp-2">
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
                       {item.previewField}
                       {item.previewField.length >= 80 ? "..." : ""}
                     </p>
                   )}
                   {!item.previewField && item.status === "empty" && (
-                    <p className="mt-2 text-xs text-gray-300 italic">
+                    <p className="mt-2 text-xs text-gray-300 dark:text-gray-600 italic">
                       לא נכתב תוכן עדיין
                     </p>
                   )}
@@ -329,7 +329,7 @@ export default function PortfolioPage() {
                   <div className="mt-3">
                     <Link
                       href={`/participant/assignments/${item.id}`}
-                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+                      className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
                     >
                       פתח מטלה ←
                     </Link>

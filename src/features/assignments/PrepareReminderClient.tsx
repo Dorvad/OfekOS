@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-const PREPARE_KEY = "ofekos:prepare:u1:data";
-
 interface PrepareData {
   insight: string;
   dilemma: string;
@@ -16,18 +14,21 @@ interface PrepareReminderClientProps {
   sessionNumber: number;
   sessionTitle: string;
   sessionDate: string;
+  userId: string;
 }
 
 export default function PrepareReminderClient({
   sessionNumber,
   sessionTitle,
   sessionDate,
+  userId,
 }: PrepareReminderClientProps) {
   const [filled, setFilled] = useState(0);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const raw = localStorage.getItem(PREPARE_KEY);
+    const key = `ofekos:prepare:${userId}:data`;
+    const raw = localStorage.getItem(key);
     if (raw) {
       try {
         const d: PrepareData = JSON.parse(raw);
@@ -35,7 +36,7 @@ export default function PrepareReminderClient({
       } catch { /* ignore */ }
     }
     setHydrated(true);
-  }, []);
+  }, [userId]);
 
   if (!hydrated) return null;
 
