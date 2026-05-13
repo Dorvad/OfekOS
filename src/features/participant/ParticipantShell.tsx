@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { MOCK_PROGRAM } from "@/lib/mock-data";
-import { createClient } from "@/lib/supabase/client";
+import UserSettingsMenu from "./UserSettingsMenu";
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 
@@ -115,23 +115,18 @@ interface Props {
   children: React.ReactNode;
   userName: string;
   userInitials: string;
+  avatarUrl: string | null;
   isAdmin: boolean;
 }
 
-export default function ParticipantShell({ children, userName, userInitials, isAdmin }: Props) {
+export default function ParticipantShell({ children, userName, userInitials, avatarUrl, isAdmin }: Props) {
   const pathname = usePathname();
   const activeKey = getActiveKey(pathname);
 
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    window.location.href = "/login";
-  }
-
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
 
-      {/* Admin banner — shown when admin browses as participant */}
+      {/* Admin banner */}
       {isAdmin && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between">
           <span className="text-xs font-medium text-amber-800">
@@ -147,14 +142,15 @@ export default function ParticipantShell({ children, userName, userInitials, isA
       )}
 
       {/* ── Top bar ── */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+
           {/* Logo */}
           <div className="flex items-center gap-2.5">
             <span className="text-base font-bold tracking-tight leading-none select-none">
-              <span className="text-gray-700">ofek</span><span className="text-brand-600">OS</span>
+              <span className="text-gray-700 dark:text-gray-200">ofek</span><span className="text-brand-600">OS</span>
             </span>
-            <span className="hidden sm:block text-xs text-gray-400 border-r border-gray-200 pr-2.5 leading-none">
+            <span className="hidden sm:block text-xs text-gray-400 dark:text-gray-500 border-r border-gray-200 dark:border-gray-600 pr-2.5 leading-none">
               {MOCK_PROGRAM.name.split("—")[0].trim()}
             </span>
           </div>
@@ -170,8 +166,8 @@ export default function ParticipantShell({ children, userName, userInitials, isA
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
                     isActive
-                      ? "bg-brand-50 text-brand-700"
-                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                      ? "bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   )}
                 >
                   <NavIcon navKey={item.key} active={isActive} />
@@ -181,21 +177,16 @@ export default function ParticipantShell({ children, userName, userInitials, isA
             })}
           </nav>
 
-          {/* User + logout */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* User — settings menu replaces avatar + logout button */}
+          <div className="flex items-center gap-2.5 shrink-0">
             {userName && (
-              <span className="hidden sm:block text-xs text-gray-500">{userName}</span>
+              <span className="hidden sm:block text-xs text-gray-500 dark:text-gray-400">{userName}</span>
             )}
-            <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
-              {userInitials}
-            </div>
-            <button
-              onClick={handleLogout}
-              className="text-xs text-gray-400 hover:text-red-500 transition-colors px-2 py-1 rounded-lg hover:bg-red-50 font-medium"
-              title="יציאה מהמערכת"
-            >
-              יציאה
-            </button>
+            <UserSettingsMenu
+              initialName={userName}
+              initialInitials={userInitials}
+              initialAvatarUrl={avatarUrl}
+            />
           </div>
         </div>
       </header>
@@ -206,8 +197,8 @@ export default function ParticipantShell({ children, userName, userInitials, isA
       </main>
 
       {/* ── Mobile bottom tab bar ── */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-100 shadow-[0_-1px_0_0_#f3f4f6]">
-        <div className="grid grid-cols-6 h-16 max-w-lg mx-auto">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 shadow-[0_-1px_0_0_#f3f4f6]">
+        <div className="grid grid-cols-5 h-16 max-w-lg mx-auto">
           {NAV.map((item) => {
             const isActive = activeKey === item.key;
             return (
@@ -216,7 +207,9 @@ export default function ParticipantShell({ children, userName, userInitials, isA
                 href={item.href}
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 transition-colors",
-                  isActive ? "text-brand-600" : "text-gray-400"
+                  isActive
+                    ? "text-brand-600 dark:text-brand-400"
+                    : "text-gray-400 dark:text-gray-500"
                 )}
               >
                 <NavIcon navKey={item.key} active={isActive} />
@@ -224,18 +217,6 @@ export default function ParticipantShell({ children, userName, userInitials, isA
               </Link>
             );
           })}
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex flex-col items-center justify-center gap-0.5 text-gray-400 transition-colors hover:text-red-500"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-            <span className="text-[10px] font-medium leading-none">יציאה</span>
-          </button>
         </div>
       </nav>
     </div>

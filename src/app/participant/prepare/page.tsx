@@ -220,25 +220,25 @@ export default function PreparePage() {
           return (
             <Card
               key={field.key}
-              className={`transition-all ${filled ? "border-indigo-100 bg-indigo-50/30" : ""}`}
+              className={`transition-all ${filled ? "border-indigo-100 dark:border-indigo-800 bg-indigo-50/30 dark:bg-indigo-900/10" : ""}`}
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">{field.emoji}</span>
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
                   שדה {i + 1} מתוך 4
                 </span>
                 {filled && <span className="text-xs text-emerald-600 font-semibold mr-auto">✓ מולא</span>}
               </div>
-              <label className="block text-sm font-bold text-gray-800 mb-1">
+              <label className="block text-sm font-bold text-gray-800 dark:text-gray-200 mb-1">
                 {field.label}
               </label>
-              <p className="text-xs text-gray-500 mb-3">{field.hint}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{field.hint}</p>
               <textarea
                 value={data[field.key]}
                 onChange={(e) => handleChange(field.key, e.target.value)}
                 placeholder={field.placeholder}
                 rows={3}
-                className="w-full rounded-xl border border-gray-200 bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none transition-colors"
                 dir="rtl"
               />
             </Card>

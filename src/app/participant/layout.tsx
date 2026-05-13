@@ -12,11 +12,13 @@ export default async function ParticipantLayout({ children }: { children: React.
   let userInitials = "?";
   let isAdmin = false;
 
+  let avatarUrl: string | null = null;
+
   if (user) {
     const service = createServiceClient();
     const { data } = await service
       .from("users")
-      .select("name, avatar_initials, role")
+      .select("name, avatar_initials, role, avatar_url")
       .eq("id", user.id)
       .single();
 
@@ -25,10 +27,16 @@ export default async function ParticipantLayout({ children }: { children: React.
       userInitials = data.avatar_initials ?? data.name.slice(0, 2).toUpperCase();
     }
     isAdmin = data?.role === "admin";
+    avatarUrl = data?.avatar_url ?? null;
   }
 
   return (
-    <ParticipantShell userName={userName} userInitials={userInitials} isAdmin={isAdmin}>
+    <ParticipantShell
+      userName={userName}
+      userInitials={userInitials}
+      avatarUrl={avatarUrl}
+      isAdmin={isAdmin}
+    >
       {children}
     </ParticipantShell>
   );

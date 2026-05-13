@@ -16,7 +16,7 @@ const accentColors: Record<string, string> = {
 
 export default function ProgramAxis({ assignments, statuses }: ProgramAxisProps) {
   return (
-    <div className="flex items-center gap-2" dir="rtl">
+    <div className="flex items-center" dir="rtl">
       {assignments.map((a, i) => {
         const status = statuses[a.id] ?? "locked";
         const isLocked = !a.isUnlocked || status === "locked";
@@ -24,18 +24,20 @@ export default function ProgramAxis({ assignments, statuses }: ProgramAxisProps)
         const isActive = !isLocked && !isDone;
         const color = accentColors[a.accentColor] ?? "#6366f1";
 
+        const isNextConnectorFilled = i < assignments.length - 1 && isDone;
+
         return (
-          <div key={a.id} className="flex items-center gap-2">
+          <div key={a.id} className="flex items-center">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 relative"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border-2 relative shrink-0"
               style={{
                 borderColor: isLocked ? "#e5e7eb" : color,
-                backgroundColor: isDone ? color : isActive ? `${color}20` : "#f9fafb",
+                backgroundColor: isDone ? color : isActive ? `${color}15` : "transparent",
                 color: isDone ? "#fff" : isLocked ? "#9ca3af" : color,
               }}
             >
               {isDone ? (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               ) : (
@@ -43,13 +45,19 @@ export default function ProgramAxis({ assignments, statuses }: ProgramAxisProps)
               )}
               {isActive && (
                 <span
-                  className="absolute inset-0 rounded-full animate-ping opacity-20"
+                  className="absolute inset-0 rounded-full animate-ping opacity-25"
                   style={{ backgroundColor: color }}
                 />
               )}
             </div>
             {i < assignments.length - 1 && (
-              <div className="w-4 h-0.5 bg-gray-200 shrink-0" />
+              <div
+                className="w-5 h-1 shrink-0 rounded-full transition-colors duration-300"
+                style={{
+                  backgroundColor: isNextConnectorFilled ? color : "#e5e7eb",
+                  opacity: isLocked ? 0.5 : 1,
+                }}
+              />
             )}
           </div>
         );
